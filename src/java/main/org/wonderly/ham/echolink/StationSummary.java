@@ -8,8 +8,10 @@ import javax.swing.event.*;
 import org.wonderly.swing.*;
 import org.wonderly.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class StationSummary extends JDialog {
+	private static final long serialVersionUID = 1L;
 	static final String types[] = new String[] { "",
 		"Links", "Repeaters", "Users",
 		"Conf Srvrs", "Totals" 
@@ -54,6 +56,8 @@ public class StationSummary extends JDialog {
 		mod = new MyModel( je );
 		refs.addElement(mod);
 		cpk.pack( new JScrollPane( tbl = new JTable(mod) {
+			private static final long serialVersionUID = 1L;
+
 			public void setEnabled( boolean how ) {
 				super.setEnabled(how);
 				setOpaque(how);
@@ -93,8 +97,8 @@ public class StationSummary extends JDialog {
 					second = row;
 					if( second != first )
 						return;
-					new ComponentUpdateThread( tbl ) {
-						public Object construct() {
+					new ComponentUpdateThread<Void>( tbl ) {
+						public Void construct() {
 							je.showCountry( (String)mod.getValueAt( second, 0 ) );
 							return null;
 						}
@@ -124,6 +128,7 @@ public class StationSummary extends JDialog {
 	}
 
 	class MyModel extends DefaultTableModel implements Refreshable {
+		private static final long serialVersionUID = 1L;
 		Javecho je;
 		ArrayList<RowEnt> rows;
 		boolean rebuilding;
@@ -140,7 +145,7 @@ public class StationSummary extends JDialog {
 			}
 		}
 		public void refresh() {
-			new ComponentUpdateThread( tbl ) {
+			new ComponentUpdateThread<Void>( tbl ) {
 				public void setup() {
 					super.setup();
 					setTableTip( "Rebuilding Station List...");
@@ -148,7 +153,7 @@ public class StationSummary extends JDialog {
 					newDataAvailable(new TableModelEvent(MyModel.this));
 					tbl.repaint();
 				}
-				public Object construct() {
+				public Void construct() {
 					rebuildList();
 					return null;
 				}
@@ -168,15 +173,15 @@ public class StationSummary extends JDialog {
 			this.je = je;
 		}
 		private void rebuildList() {
-			final Hashtable<String,Integer> h = 
-				new Hashtable<String,Integer>();
-			Vector<Entry> v = je.getStationList();
+			final Map<String,Integer> h = 
+				new HashMap<String,Integer>();
+			List<Entry> v = je.getStationList();
 			setTableTip("Counting sites...");
 			System.out.println("model rebuilding country list: "+v.size() );
 			for( int i = 0; i < v.size(); ++i ) {
-				Entry e = v.elementAt(i);
+				Entry e = v.get(i);
 				String call = e.getStation().getCall();
-				if( call == null || call.length() < 2 || call.charAt(0) == '*' || e.getType() == e.TYPE_MSG )
+				if( call == null || call.length() < 2 || call.charAt(0) == '*' || e.getType() == Entry.TYPE_MSG )
 					continue;
 				String c;
 				c = CountryAccess.countryFor( call );
@@ -193,9 +198,7 @@ public class StationSummary extends JDialog {
 				h.put( c, new Integer( vl + 1 ) );
 			}
 			rows = new ArrayList<RowEnt>();
-			Enumeration e = h.keys();
-			while( e.hasMoreElements() ) {
-				String key = (String)e.nextElement();
+			for( String key : h.keySet() ) {
 				rows.add( new RowEnt( key,((Integer)h.get(key)).intValue() ) );
 			}
 			setTableTip("Sorting sites...");
@@ -271,12 +274,12 @@ public class StationSummary extends JDialog {
 		
 		void recount() {
 			try {
-				Vector v = je.getStationList();
+				List<Entry> v = je.getStationList();
 				int tot = 0;
 				int bus = 0;
 				for( int i = 0; i < v.size(); ++i ) {
-					Entry e = (Entry)v.elementAt(i);
-					if( ( type != 5 && e.getType() != type ) || e.getType() == e.TYPE_MSG )
+					Entry e = (Entry)v.get(i);
+					if( ( type != 5 && e.getType() != type ) || e.getType() == Entry.TYPE_MSG )
 						continue;
 					++tot;
 					if( e.isBusy() ) ++bus;

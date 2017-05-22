@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src/java/main"/>
+	<classpathentry excluding="org/wonderly/ham/echolink/EcholinkServerImpl.java" kind="src" path="src/java/main"/>
 	<classpathentry kind="lib" path="modules/ext/cmu_time_awb.jar"/>
 	<classpathentry kind="lib" path="modules/ext/cmu_us_kal.jar"/>
 	<classpathentry kind="lib" path="modules/ext/cmuawb.jar"/>

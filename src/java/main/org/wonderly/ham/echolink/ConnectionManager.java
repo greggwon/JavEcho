@@ -1,14 +1,17 @@
 package org.wonderly.ham.echolink;
 
-import java.util.*;
-import java.net.*;
-import java.io.*;
-import javax.sound.sampled.*;
-import javax.swing.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
-import java.text.*;
-import java.util.logging.*;
-import org.wonderly.ham.echolink.audio.*;
+import java.util.TimerTask;
+import java.util.Vector;
+import java.util.logging.Logger;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.Line;
+
+import org.wonderly.ham.echolink.audio.AudioEventHandler;
 
 /**
  *  This class manages the connection to/from other stations.
@@ -35,6 +38,10 @@ public class ConnectionManager implements AudioEventHandler {
 	EventPackets ep;
 	Timer timer = new Timer();
 	private Vector<AudioEventListener> audLis = new Vector<AudioEventListener>();
+	
+	public String toString() {
+		return "ConnectionManager";
+	}
 	
 	public Connection getConnectionHost( String addr ) {
 //		progress("look for connection to: \""+addr+"\"");
@@ -189,7 +196,7 @@ public class ConnectionManager implements AudioEventHandler {
 				je.disconnectFrom(addr);
 				progress("checking disconnects");
 				je.checkConnections();
-				LinkEvent le = new LinkEvent(
+				LinkEvent<Number> le = new LinkEvent<Number>(
 					addr, true, LinkEvent.DISC_EVENT, seq );
 				je.sendEvent( le );
 				if( je.getConnectionStats() != null ) {
@@ -306,12 +313,12 @@ public class ConnectionManager implements AudioEventHandler {
 		c.sendInfo(("oNDATACONF"+info).getBytes() );
 	}
 
-	public Vector<Connection> getConnectedList() {
-		Vector<Connection> v = new Vector<Connection>();
+	public List<Connection> getConnectedList() {
+		List<Connection> v = new ArrayList<Connection>();
 		log.finer("getConnectedList: "+conns );
 		for( int i = 0; i < conns.size(); ++i ) {
 			Connection c = conns.elementAt(i);
-			v.addElement( c );
+			v.add( c );
 		}
 		return v;
 	}
@@ -429,7 +436,7 @@ public class ConnectionManager implements AudioEventHandler {
    			}
         }
         if( conns.size() > 1 ) {
-			LinkEvent le = new LinkEvent( data, true, LinkEvent.MICDATA_EVENT, seq );
+			LinkEvent<Number> le = new LinkEvent<Number>( data, true, LinkEvent.MICDATA_EVENT, seq );
 			je.sendEvent( le );
         }
 	}
@@ -459,7 +466,7 @@ public class ConnectionManager implements AudioEventHandler {
    				shutdownStream( c );
    				--i;  // removeElement will point us one ahead.
    			}
-			LinkEvent le = new LinkEvent( data, true, LinkEvent.MICDATA_EVENT, seq );
+			LinkEvent<Number> le = new LinkEvent<Number>( data, true, LinkEvent.MICDATA_EVENT, seq );
 			je.sendEvent( le );
         }
 	}
@@ -565,8 +572,8 @@ public class ConnectionManager implements AudioEventHandler {
 
 				// In sysop mode, open PTT
 				if( prm.isUserMode() == false ) {
-					LinkEvent le = new LinkEvent<Object>( prm.isUserMode(),
-						false, LinkEvent.MODE_SYSOPIDLE, -1, null );
+					LinkEvent<Number> le = new LinkEvent<Number>( this, prm.isUserMode(),
+						LinkEvent.MODE_SYSOPIDLE, -1, null );
 					je.sendEvent( le );
 				}
 			}
@@ -597,18 +604,18 @@ public class ConnectionManager implements AudioEventHandler {
 					if( new String(arr,6,4).equals("CONF") ) {
 						je.setInfo( tx = zeroTermText( arr, 10 ).replace("\r","\n") );
 					} else if( arr[6] != '\r' ) {
-						je.dumpPacket( "chat text", arr, sz, 500 );
+						Javecho.dumpPacket( "chat text", arr, sz, 500 );
 						je.addChatText( tx = zeroTermText( arr, 6 ).replace("\r","\n") );
 					} else {
 						je.setInfo( tx = zeroTermText( arr, 6 ).replace("\r","\n") );
 //						je.dumpPacket( "data", arr, sz, 20 );
 					}
 				} else {
-					je.dumpPacket( "oN but not oNDATA data", arr, sz, 20 );
+					Javecho.dumpPacket( "oN but not oNDATA data", arr, sz, 20 );
 				}
 
 				if( tx != null ) {
-					LinkEvent le = new LinkEvent( tx, false, LinkEvent.INFO_EVENT, -1 );
+					LinkEvent<Number> le = new LinkEvent<Number>( tx, false, LinkEvent.INFO_EVENT, -1 );
 					je.sendEvent( le );
 				}
 			}
@@ -639,21 +646,21 @@ public class ConnectionManager implements AudioEventHandler {
 			}
 
 			if( lastseq >= seq ) {
-				LinkEvent le = new LinkEvent( new Integer(seq), false, LinkEvent.OUT_OF_SEQUENCE_DATA, seq );
+				LinkEvent<Number> le = new LinkEvent<Number>( new Integer(seq), false, LinkEvent.OUT_OF_SEQUENCE_DATA, seq );
 				je.sendEvent( le );
 				progress("out of sequence voice "+lastseq+" >= "+seq );
 				return;
 			}
 
 			if( lastseq < seq-1 ) {
-				LinkEvent le = new LinkEvent( new Integer(seq), false, LinkEvent.MISSED_DATA, seq );
+				LinkEvent<Number> le = new LinkEvent<Number>( new Integer(seq), false, LinkEvent.MISSED_DATA, seq );
 				je.sendEvent( le );
 				progress("missed data "+lastseq+" < "+(seq-1) );
 				lastseq = seq - 1;
 			}
 
 			// Notify of audio arriving..
-			je.sendEvent( new LinkEvent( addr, false, LinkEvent.NETDATA_EVENT, seq ) );
+			je.sendEvent( new LinkEvent<Number>( addr, false, LinkEvent.NETDATA_EVENT, seq ) );
 
 			final int fsz = 320;
 			byte[]outBytes = new byte[fsz*4];

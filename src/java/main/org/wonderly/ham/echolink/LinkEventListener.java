@@ -1,5 +1,5 @@
 package org.wonderly.ham.echolink;
 
-public interface LinkEventListener {
-	public void processEvent( LinkEvent ev );
+public interface LinkEventListener<T> {
+	public void processEvent( LinkEvent<T> ev );
 }

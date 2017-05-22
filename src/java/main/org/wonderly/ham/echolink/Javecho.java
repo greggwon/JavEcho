@@ -61,9 +61,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 import java.util.TimerTask;
 import java.util.TooManyListenersException;
@@ -120,6 +122,7 @@ import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -142,10 +145,8 @@ import org.wonderly.ham.MorseControl;
 import org.wonderly.ham.audio.AudioMorseSender;
 import org.wonderly.io.HashtableReader;
 import org.wonderly.io.VectorReader;
-import org.wonderly.swing.ComponentUpdateThread;
-import org.wonderly.swing.ExceptionHandler;
-import org.wonderly.swing.LoweredLabel;
-import org.wonderly.swing.SmallBevelBorder;
+import org.wonderly.logging.SimpleFormatter;
+import org.wonderly.swing.*;
 import org.wonderly.swing.net.HTMLBrowser;
 import org.wonderly.swing.net.PageEvent;
 import org.wonderly.swing.net.PageListener;
@@ -164,13 +165,17 @@ import org.wonderly.swing.net.PageListener;
  * </dl>
  */
 public class Javecho extends JFrame implements ExceptionHandler {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	/** Access to the echolink login server operations */
 	private volatile ServerAccess acc;
 	public static final String version = Version.version;
 	/** The station list of all connected stations */
-	private Vector<Entry> staList;
+	private List<Entry> staList;
 	/** The station list of all friend locations */
-	private Vector<Entry> frList;
+	private List<Entry> frList;
 	/** The trees of various views of the station data */
 	private JTree stations, favorites, lastSelTree, locations;
 	/** Tree models for all stations and friends trees */
@@ -202,16 +207,16 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/** The audio level display for RX and TX audio */
 	private volatile AudioLevel average;
 	/** Loggers */
-	private static Logger log = Logger.getLogger( "org.wonderly.ham.echolink" );
-	private static Logger proglog = Logger.getLogger( "org.wonderly.ham.echolink.progress" );
-	private static Logger seriallog = Logger.getLogger( "org.wonderly.ham.echolink.serial" );
+	private final static Logger log = Logger.getLogger( Javecho.class.getName() );
+	private final static Logger proglog = Logger.getLogger( Javecho.class.getName()+".progress" );
+	private final static Logger seriallog = Logger.getLogger( Javecho.class.getName()+".serial" );
 	private JPanel aupan;
 	/** The TX indicator, a disabled button */
 	private JButton txbut;
 	/** Programatic parameters */
 	static Parameters pr;
 	/** The actions supported inside the GUI */
-	private Hashtable<String,Action> actions = new Hashtable<String,Action>();
+	private Map<String,Action> actions = new HashMap<String,Action>();
 	public static String oneAddress; // Set this to an IP address for debugging...
 	private String site = "";
 	/** The connection statistics accumulation and display */
@@ -219,7 +224,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/** The summary of stations dialog */
 	private StationSummary stsumm;
 	/** Listeners for link up/down events */
-	private Vector<LinkEventListener> listeners;
+	private List<LinkEventListener<?>> listeners;
 	/** Tabbed pane for HTML, debugging and echolink tabs */
 	private JTabbedPane tabs;
 	/** Volume gain control for RX audio */
@@ -235,13 +240,13 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/** Drag source for callsign drag and drop */
 	private DragSource dgs;
 	/** The lines of text returned from the connection event by the echolink servers */
-	private Vector<Entry> sysmsg;
+	private List<Entry> sysmsg;
 	/** Implementation of audio tones for event notification */
 	private AudioProvider audio;
 	private java.util.Timer timer = new java.util.Timer();
 	private URL currentURL;
 	/** List of stations we have contacted */
-	private Hashtable<String,String> contacts = new Hashtable<String,String>();
+	private Map<String,String> contacts = new HashMap<String,String>();
 	/** Web page stack of urls */
 	private Stack<URL> urls = new Stack<URL>();
 	private JPanel controls;
@@ -289,7 +294,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/**
 	 *  Get the list of all known stations
 	 */
-	public Vector<Entry> getStationList() {
+	public List<Entry> getStationList() {
 		return staList;
 	}
 
@@ -305,6 +310,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public static String myVersion() {
 		return "1.03";
+	}
+	
+	@Override
+	public String toString() {
+		return "Javecho";
 	}
 
 	/**
@@ -481,15 +491,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/**
 	 *  Add a link status/progress listener
 	 */
-	public void addLinkEventListener( LinkEventListener lis ) {
-		listeners.addElement( lis );
+	public void addLinkEventListener( LinkEventListener<?> lis ) {
+		listeners.add( lis );
 	}
 
 	/**
 	 *  Remove a link status/progress listener
 	 */
-	public void removeLinkEventListener( LinkEventListener lis ) {
-		listeners.removeElement( lis );
+	public void removeLinkEventListener( LinkEventListener<?> lis ) {
+		listeners.remove( lis );
 	}
 
 	/**
@@ -499,7 +509,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		log.finer("Sending linkevent to "+listeners.size()+" listeners: "+ev );
 		for( int i = 0; i < listeners.size(); ++i ) {
 			try {
-				((LinkEventListener)listeners.elementAt(i)).processEvent( ev );
+				listeners.get(i).processEvent( ev );
 			} catch( Exception ex ) {
 				reportException(ex);
 			}
@@ -517,7 +527,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			try {
 				ObjectOutputStream os = new ObjectOutputStream( fs );
 				try {
-			  		Vector friendData = frmod.getContents();
+			  		List friendData = frmod.getContents();
 					os.writeObject( new Integer(6) );
 					os.writeObject( friendData );
 					os.writeObject( qsoHist.getHistory() );
@@ -623,6 +633,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public static void main( String args[] ) throws Exception {
 //		new Socket("nasouth.echolink.org", 5200).close();
+		Logger.getLogger("").getHandlers()[0].setFormatter(new SimpleFormatter());
 		new Javecho(args);
 	}
 
@@ -734,11 +745,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	protected void setContacts( String str ) {
 		if( ssa.getConnectCount() > 1 )
 			return;
-		Vector<Connection> v = ssa.getConnectedList();
+		List<Connection> v = ssa.getConnectedList();
 		if( v.size() < 1 )
 			return;
-		Connection c = 
-			(Connection)v.elementAt(0);
+		Connection c = v.get(0);
 		Entry et = findEntry( c.getName() );
 		if( et != null ) {
 			StationData sd = et.getStation();
@@ -755,7 +765,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		while( e.hasMoreElements() ) {
 			CommPortIdentifier p = (CommPortIdentifier)e.nextElement();
 			if( p.getName().equals( port ) ) {
-				if( p.getPortType() != p.PORT_SERIAL ) 
+				if( p.getPortType() != CommPortIdentifier.PORT_SERIAL ) 
 					throw new IllegalArgumentException( port+": must specified serial port");
 				return p;
 			}
@@ -870,6 +880,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	int lastmode = -1;
 	TimerTask txcnt;
 	long txtime;
+	private DragGestureRecognizer fdgr;
+	private DragGestureRecognizer sdgr;
+	private DropTarget dt;
+	private DragGestureRecognizer flgr;
 	
 	/**
 	 *  get the mode description string associated with the passed integer state.
@@ -1041,9 +1055,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 *  This is still under development...
 	 */
 	private void registerMediaHandler() {
-		addLinkEventListener( new LinkEventListener() {
-			public void processEvent( LinkEvent ev ) {
-				if( ev.getType() == ev.SDES_EVENT && ev.isSend() == false ) {
+		addLinkEventListener( new LinkEventListener<Object>() {
+			public void processEvent( LinkEvent<Object> ev ) {
+				if( ev.getType() == LinkEvent.SDES_EVENT && ev.isSend() == false ) {
 					int sz = ev.getValue();
 					RTPacket pk = new RTPacket( (byte[])ev.getSource(), sz );
 					rtcp_sdes_request r = new rtcp_sdes_request(2);
@@ -1057,7 +1071,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					if( !isSdes )
 						return;
 					if( r.item[1].r_text != null && r.item[1].r_text.length > 0 ) {
-						Hashtable h = RTPacket.PropertyManager.getProperties( r.item[1].r_text );
+						Map h = RTPacket.PropertyManager.getProperties( r.item[1].r_text );
 						progress( "Found properties: "+h );
 					}
 				}
@@ -1392,7 +1406,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		qsoHist = new QSOHistory( this );
 		alarmMgr.almLog = new AlarmLog(this,this);
 		alarmMgr.almEd = new AlarmEditor(this);
-		listeners = new Vector<LinkEventListener>();
+		listeners = new ArrayList<LinkEventListener<?>>();
 		pr = new Parameters(this);
 		pr.loadData();
 
@@ -1537,15 +1551,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		stTabs.add( "By Location", new JScrollPane( locations ) );
 		upk.pack( stTabs ).gridx(0).gridy(1).fillboth().weighty(3).gridw(2);
 
-		DropTarget dt = new DropTarget( favorites, new FavoritesTargetListener() );
+		dt = new DropTarget( favorites, new FavoritesTargetListener() );
 		
 		dgs = DragSource.getDefaultDragSource();
-		final DragGestureRecognizer sdgr = dgs.createDefaultDragGestureRecognizer( stations, 
+		sdgr = dgs.createDefaultDragGestureRecognizer( stations, 
 			255, new EntryDragRecoginizer(stations));
-		final DragGestureRecognizer fdgr = dgs.createDefaultDragGestureRecognizer( favorites, 
+		fdgr = dgs.createDefaultDragGestureRecognizer( favorites, 
 			255, new EntryDragRecoginizer(favorites));
 
-		final DragGestureRecognizer flgr = dgs.createDefaultDragGestureRecognizer( locations, 
+		flgr = dgs.createDefaultDragGestureRecognizer( locations, 
 			255, new EntryDragRecoginizer(locations));
 
 		JPanel infop = new JPanel();
@@ -1571,7 +1585,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		Packer avpk = new Packer(avpan);
 //		avpan.setOpaque(true);
 //		avpan.setBackground( Color.red );
-		JPanel jp;
+
 		avpk.pack( new InvisPanel() ).gridx(0).gridy(0).fillx().weightx(1);
 		avpk.pack( average = new AudioLevel( Javecho.this, 0, 0x7fff ) ).gridx(1).gridy(0).fillx().weightx(6);
 		JPanel tpan = new JPanel();
@@ -1610,7 +1624,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		gpk.pack( gainMin ).gridx(0).gridy(2);
 		JLabel gainVal = new JLabel("0", JLabel.CENTER );
 		gainSlider = new JSlider( crm = new ControlRangeModel( Javecho.this, gainMin, gainMax, gainVal ) );
-		gainSlider.setOrientation( gainSlider.VERTICAL );
+		gainSlider.setOrientation( SwingConstants.VERTICAL );
 		gpk.pack(gainSlider).gridx(0).gridy(1).filly();
 		gainPan.setBorder( gainBorder = BorderFactory.createTitledBorder("Volume") );
 		gainPan.setVisible(false);
@@ -1670,7 +1684,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						Entry e = findEntry( nd.getCall() );
 						if( e == null )
 							return;
-					  	Vector friendData = frmod.getContents();
+					  	List<Entry> friendData = frmod.getContents();
 						if( friendData.contains(e) == false ) {
 							frmod.addData(e);
 						}
@@ -1741,7 +1755,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					data[arr.length] = '\r';
 					data[arr.length+1] = '\n';
 					data[arr.length+2] = 0;
-					ssa.sendPacket( data, ssa.CHAT_TYPE );
+					ssa.sendPacket( data, ConnectionManager.CHAT_TYPE );
 					msgText.setText("");
 					msgText.repaint();
 					msgSend.requestFocus(false);
@@ -1766,7 +1780,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		addWindowListener( new WindowAdapter() {
 			public void windowClosing( WindowEvent ev ) {
 				new ComponentUpdateThread<Object>( Javecho.this ) {
-					public Object doInBackground() {
+					public Object construct() {
 						checkExit();
 						return null;
 					}
@@ -1783,16 +1797,16 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		sp2.revalidate();
 		sp2.repaint();
 
-		new ComponentUpdateThread<Object>( favorites ) {
+		new ComponentUpdateThread<Void>( favorites ) {
 			public void setup() {
 				super.setup();
 				favorites.repaint();
 			}
-			public Object doInBackground() {
+			public Void construct() {
 				loadFavorites();
 				return null;
 			}
-			public void done() {
+			public void finished() {
 				favorites.repaint();
 			}
 		}.start();
@@ -1902,6 +1916,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 *  a non-standard background pane
 	 */
 	private static class InvisPanel extends JPanel {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
 		public InvisPanel() {
 			setOpaque(false);
 		}
@@ -2017,7 +2036,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public void toolsAdd( JToolBar tools, Action a ) {
 		JButton b = tools.add( a );
-		Object str = a.getValue(a.SHORT_DESCRIPTION);
+		Object str = a.getValue(Action.SHORT_DESCRIPTION);
 		b.setToolTipText( str == null ? (String)null : str.toString() );
 	}
 	
@@ -2030,7 +2049,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public void toolsAddToggle( JToolBar tools, Action a ) {
 		final JToggleButton b = new JToggleButton(a);
 		tools.add( b );
-		Object str = a.getValue(a.SHORT_DESCRIPTION);
+		Object str = a.getValue(Action.SHORT_DESCRIPTION);
 		b.setToolTipText( str == null ? (String)null : str.toString() );
 		if( a instanceof LabeledToggleAction ) {
 			final LabeledToggleAction la = (LabeledToggleAction)a;
@@ -2291,7 +2310,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				mi.addActionListener( new ActionListener() {
 					public void actionPerformed( ActionEvent ev ) {
 						Entry e = (Entry)o;
-						Vector friendData = frmod.getContents();
+						List<Entry> friendData = frmod.getContents();
 						if( friendData.contains(e) == false ) {
 							frmod.addData(e);
 							saveFavorites();
@@ -2304,12 +2323,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				mi.addActionListener( new ActionListener() {
 					public void actionPerformed( ActionEvent ev ) {
 						Entry e = (Entry)o;
-						Vector<Entry> friendData = frmod.getContents();
+						List<Entry> friendData = frmod.getContents();
 	//					progress("Check remove for: "+e+
 	//						", friendData.contains(e): "+friendData.contains(e) );
 						if( tree == favorites ) {
 							if( friendData.contains(e) == true ) {
-								friendData.removeElement(e);
+								friendData.remove(e);
 								saveFavorites();
 								frmod.setData(friendData);
 							}
@@ -2325,7 +2344,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				public void actionPerformed( ActionEvent ev ) {
 					final Entry e = (Entry)o;
 					new ComponentUpdateThread( tree ) {
-						public Object doInBackground() {
+						public Object construct() {
 							connectTo( e.getStation(), false );
 							return null;
 						}
@@ -2465,8 +2484,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					}
 					public void dragDropEnd( DragSourceDropEvent evv ) {
 					}
-					public void drop( DragSourceDropEvent evv ) {
-					}
 				}
 			);
 		}
@@ -2583,8 +2600,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					}
 					public void dragDropEnd( DragSourceDropEvent evv ) {
 					}
-					public void drop( DragSourceDropEvent evv ) {
-					}
 				}
 			);
 		}
@@ -2656,7 +2671,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				if( obj instanceof Entry ) {
 					final Entry ent = (Entry)obj;
 					new ComponentUpdateThread( (JComponent)null ) {
-						public Object doInBackground() {
+						public Object construct() {
 							try { 
 									connectTo( ent.getStation(), false );
 							} catch( Exception ex ) {
@@ -2713,7 +2728,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		final boolean open[] = new boolean[2];
 
 		new ComponentUpdateThread<Boolean>( new JComponent[]{ stations, favorites } ) {
-			public Boolean doInBackground() {
+			public Boolean construct() {
 				try {
 					cancelled[0] = false;
 					curhost = logon( cursite, cancelled );
@@ -2723,7 +2738,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				}
 				return new Boolean(false);
 			}
-			public void done() {
+			public void finished() {
 				synchronized( lock ) {
 					open[1] = getValue();
 				}
@@ -2779,12 +2794,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/**
 	 *  Handler clas for received audio data available.
 	 */
-	class SysopRecvAvailControl implements Runnable,SerialPortEventListener,LinkEventListener {
+	class SysopRecvAvailControl implements Runnable,SerialPortEventListener,LinkEventListener<Object> {
 		SerialPort port;
 		String rcvSerPort;
 		boolean done;
 
-		public void processEvent( LinkEvent ev ) {
+		public void processEvent( LinkEvent<Object> ev ) {
 			log.finer("Got LinkEvent: "+ev );
 			switch( ev.getType() ) {
 				case LinkEvent.VOX_CLOSE_EVENT:
@@ -2936,7 +2951,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			name = name.substring(1);
 		}
 		for( int i = 0; i < staList.size(); ++i ) {
-			Entry e = (Entry)staList.elementAt(i);
+			Entry e = (Entry)staList.get(i);
 			if( e.getStation().getID().equals(name) || e.getStation().getCall().equals(name))
 				return e;
 		}
@@ -2953,8 +2968,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		if( path == null )
 			return;
 		final Object node = path.getLastPathComponent();
-		new ComponentUpdateThread( getAction("Conn") ) {
-			public Object doInBackground() {
+		new ComponentUpdateThread<Boolean>( getAction("Conn") ) {
+			public Boolean construct() {
 				if( node instanceof Entry ) {
 					Entry ent = (Entry)node;
 					StationData sd = ent.getStation();
@@ -2962,8 +2977,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				}
 				return new Boolean(false);
 			}
-			public void done() {
-				Boolean b = (Boolean)getValue();
+			@Override
+			public void finished() {
+				Boolean b = getValue();
 				getAction("Conn").setEnabled(!b.booleanValue());
 			}
 		}.start();
@@ -2976,8 +2992,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			final Entry ent = (Entry)node;
 			final StationData sd = ent.getStation();
 			log.fine("Disconnecting from: "+sd.getIPAddr() );
-			new ComponentUpdateThread( getAction("Disc") ) {
-				public Object doInBackground() {
+			new ComponentUpdateThread<Void>( getAction("Disc") ) {
+				public Void construct() {
 					try {
 						ssa.disconnectFrom( sd.getIPAddr() );
 						sendEvent( new LinkEvent<StationData>(
@@ -3015,7 +3031,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public static Level PROGRESS_LEVEL = new Level( "PROG",
 		((Level.FINE.intValue() - 
 			Level.INFO.intValue())/2) + 
-			Level.INFO.intValue() ){};
+			Level.INFO.intValue() ){
+
+				/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;};
 
 	private void showStatus( final String str ) {
 		runInSwing( new Runnable() {
@@ -3253,7 +3274,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	
 	JEditorPane pn;
 	Object olock = new Object();
-	void showMessages( String title, String hdr, Vector entries ) {
+	void showMessages( String title, String hdr, List<?> entries ) {
 		if( entries.size() == 0 )
 			return;
 		String str = "<html><body>";
@@ -3261,10 +3282,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		for( int i = 0; i < entries.size(); ++i ) {
 			if( i > 0 )
 				body += pr.isUserMode() ? "<br>" : "\r\n";
-			if( entries.elementAt(i) instanceof Entry ) {
-				body += ((Entry)entries.elementAt(i)).getStation().getCall().trim();
+			if( entries.get(i) instanceof Entry ) {
+				body += ((Entry)entries.get(i)).getStation().getCall().trim();
 			} else {
-				body += entries.elementAt(i).toString();
+				body += entries.get(i).toString();
 			}
 		}
 		if( pr.isUserMode() == false ) {
@@ -3329,8 +3350,13 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Export", new LabeledAction("Export Favorites...", 
 			"Export Favorites..." ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
-				Vector<Entry>v = frmod.data;
+				List<Entry>v = frmod.data;
 
 				Preferences exn = prefs.node("export/friends");
 
@@ -3362,7 +3388,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							}
 						});
 						f.setDialogTitle( "Select Export File"  );
-						if( f.showOpenDialog( dlg) == f.APPROVE_OPTION ) {
+						if( f.showOpenDialog( dlg) == JFileChooser.APPROVE_OPTION ) {
 							File ff = f.getSelectedFile();
 							file.setText( ff.toString() );
 							String d = ff.getParent();
@@ -3419,7 +3445,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							op.println("Type,"+StationData.exportHeader(withIP));
 						}
 						for( int i = 0; i < v.size(); ++i ) {
-							Entry e = v.elementAt(i);
+							Entry e = v.get(i);
 							StationData sd = e.getStation();
 							op.println( StationData.quotedCSV(Entry.typeName(e.getType()))+","+sd.export(withIP) );
 						}
@@ -3435,6 +3461,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "About JavEcho...", new LabeledAction("About Javecho...", 
 			"About Javecho..." ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				showMessages( "About Javecho", null,
 					new Vector<String>( Arrays.asList( new String[] {
@@ -3447,6 +3478,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Server Message...", new LabeledAction("Server Message...", 
 			"Server Message..." ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				showMessages( "System Messages",
 					"The following information was returned by "+
@@ -3456,6 +3492,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Callsign Log...", new LabeledAction("Callsign Log...", 
 			"Callsign Log..." ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				showCallSigns();
 			}
@@ -3463,6 +3504,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Alarm Log", new LabeledAction("Alarm Log", 
 			"Alarm Log" ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				alarmMgr.showAlarmLog();
 			}
@@ -3470,10 +3516,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Trans", new LabeledAction( loadIcon("xmit.gif"),
 			"Transmit", false ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				log.finest("action: current txmode is: "+getTxMode() );
 				new ComponentUpdateThread( this ) {
-					public Object doInBackground() {
+					public Object construct() {
 						try {
 							setTxMode(!getTxMode());
 						} catch( InvalidSoundSystemConfigurationException ex ) {
@@ -3503,6 +3554,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Connect To...", new LabeledAction( loadIcon("connect.gif"), 
 			"Connect To...", true ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				try {
 					connectToChoose();
@@ -3515,6 +3571,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Tone Generator...", new LabeledAction( "Tone Generator...", 
 			"Tone Generator...", true ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 			}
 		});
@@ -3522,6 +3583,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		actions.put( "Sysop Settings...",
 			new LabeledAction( "Sysop Settings...", 
 				"Sysop Settings...", true ) {
+			/**
+					 * 
+					 */
+					private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				new SysopSettings( Javecho.this, pr );
 				log.info("isUserMode ? "+pr.isUserMode() );
@@ -3537,6 +3603,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Conn", new LabeledAction( loadIcon("connect.gif"), 
 			"Connect", false ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				try {
 					connectToSelected();
@@ -3553,9 +3624,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Disc", new LabeledAction( loadIcon("disco.gif"), 
 			"Disconnect", false ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				new ComponentUpdateThread( getAction("Disc") ) {
-					public Object doInBackground() {
+					public Object construct() {
 						progress("Doing disconnect");
 						try {
 							if( ssa.getConnectCount() == 1 ) {
@@ -3586,6 +3662,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Refresh", new LabeledAction( loadIcon("refresh.gif"), 
 			"Refresh" ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 //				if( !connected ) {
 //					logonAndSetup();
@@ -3596,6 +3677,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		});
 
 		actions.put( "Info", new LabeledAction( loadIcon("info.gif"), "Info" ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				Object o = selectedNode();
 				if( o instanceof Entry == false )
@@ -3606,13 +3692,18 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		});
 
 		actions.put( "Find", new LabeledAction( loadIcon("find.gif"), "Find" ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				new FindStationDialog( Javecho.this, new FindHandler() {
 					public void locate( String val ) {
 						Vector<Entry> v = new Vector<Entry>();
 						val = val.toLowerCase();
 						for( int i = 0 ;i < staList.size(); ++i ) {
-							Entry e = (Entry)staList.elementAt(i);
+							Entry e = (Entry)staList.get(i);
 							if( e.getStation().getCall().toLowerCase().startsWith( val ) ) {
 								v.addElement( e );
 							}
@@ -3652,18 +3743,33 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		});
 
 		actions.put( "Exit", new LabeledAction( "Exit" ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				checkExit();
 			}
 		});
 
 		actions.put( "Alarms...", new LabeledAction( loadIcon("alarms.gif"), "Alarms..." ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				alarmMgr.showAlarmEditor();
 			}
 		});
 
 		actions.put( "Setup", new LabeledAction( loadIcon("setup.gif"), "Setup..." ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				progress("Setup...");
 				new SetupDialog(Javecho.this, pr, false);
@@ -3675,19 +3781,29 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		});
 
 		actions.put( "Prefs", new LabeledAction( loadIcon("prefs.gif"), "Preferences..." ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				new PreferencesDialog(Javecho.this, pr);
 			}
 		});
 
 		actions.put( "Busy", new LabeledToggleAction( loadIcon("busy.gif"), "Make Me Busy" ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				try {
 					setSelected( !isSelected() );
 					notifyListeners();
 					progress("Busy: "+isSelected());
 					new ComponentUpdateThread( this ) {
-						public Object doInBackground() {
+						public Object construct() {
 							try {
 								updateLogon( );
 							} catch( Exception ex ) {
@@ -3704,6 +3820,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Connection Statistics", new LabeledAction( loadIcon("stats.gif"), 
 			"Connection Statistics" ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				if( cons != null ) {
 					cons.setVisible(true);
@@ -3714,6 +3835,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "Station Summary", new LabeledAction( loadIcon("station.gif"), 
 			"Station Summary" ) {
+			/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				if( stsumm != null ) {
 					stsumm.setVisible(true);
@@ -3740,6 +3866,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		actions.put( "JavEcho Web Site...", new LabeledAction( 
 				"JavEcho Web Site...", "JavEcho Web Site..." ) {
+			/**
+					 * 
+					 */
+					private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				if( helpFrame == null ) {
 					helpFrame = new JFrame( "Javecho Web Site" );
@@ -3766,6 +3897,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		});
 
 		actions.put( "Help", new LabeledAction( loadIcon("help.gif"), "Help" ) {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			public void actionPerformed( ActionEvent ev ) {
 				if( helpFrame == null ) {
 					helpFrame = new JFrame( "Echolink Help" );
@@ -3793,6 +3929,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	JFrame helpFrame;
+	private ListListModel<Connection> connModel;
+	private JList<Connection> connList;
 	private boolean searchTree( JTree stations, Entry e, TreeModel mod, Object root, TreePath p ) {
 		boolean found = false;
 		log.finest("Checking in:["+root+"]: "+p );
@@ -3845,6 +3983,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public Action getAction( String name ) {
 		if( actions.get(name) == null ) {
 			LabeledAction la = new LabeledAction( name, name, false ) {
+				/**
+				 * 
+				 */
+				private static final long serialVersionUID = 1L;
+
 				public void actionPerformed( ActionEvent ev ){
 					showMessageDialog( "Action Not Implemented" );
 				}
@@ -3858,8 +4001,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public void refreshList( final boolean wait ) {
 		Throwable ex = new Throwable("refreshing list");
 		log.log( Level.FINE, ex.toString(), ex );
-		new ComponentUpdateThread( getAction("Refresh") ) {
-			public Object doInBackground() {
+		new ComponentUpdateThread<Void>( getAction("Refresh") ) {
+			public Void construct() {
 				doListRefresh( wait );
 				return null;
 			}
@@ -3882,7 +4025,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		new ComponentUpdateThread( comps ) {
 
-			public Object doInBackground() {
+			public Object construct() {
 				int idx = 0;
 				try {
 					String ret[] = new String[1];
@@ -3956,12 +4099,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				try {
 					if( getValue() != null ) {
 						log.finest("Found "+staList.size()+" stations" );
-						new ComponentUpdateThread( locations ) {
+						new ComponentUpdateThread<Void>( locations ) {
 							public void setup() {
 								super.setup();
 								locations.setToolTipText("Sorting Stations...");
 							}
-							public Object construct() {
+							public Void construct() {
 									locmod.setData( staList );
 									return null;
 							}
@@ -3990,7 +4133,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						boolean some = false;
 						l.setText( "Checking for Success...");
 						for( int i = 0; i < staList.size(); ++i ) {
-							Entry e = (Entry)staList.elementAt(i);
+							Entry e = (Entry)staList.get(i);
 							if( e.getType() != Entry.TYPE_MSG ) {
 								some = true;
 								break;
@@ -4032,9 +4175,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		final JRadioButton t1 = new JRadioButton( "Call Sign:"),
 			t2 = new JRadioButton( "Node Number:");//,
 //			t3 = new JRadioButton( "IP Address:");
-		final JTextField call = new GrayedTextField(),
-			num = new GrayedTextField(),
-			ip = new GrayedTextField();
+		final JTextField call = new GrayedTextField()
+			,num = new GrayedTextField()
+//			,ip = new GrayedTextField()
+			;
 		pk.pack( t1).gridx(0).gridy(++y).west();
 		pk.pack( call ).gridx(1).gridy(y).fillx();
 		pk.pack( t2 ).gridx(0).gridy(++y).west();
@@ -4079,6 +4223,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 	
 	static class GrayedTextField extends JTextField {
+		private static final long serialVersionUID = 1L;
+
 		public void setEnabled( boolean how ) {
 			super.setEnabled( how );
 			setOpaque(how);
@@ -4093,6 +4239,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 	
 	static class ToolIcon extends ImageIcon {
+		private static final long serialVersionUID = 1L;
 		static int sz = 2;
 		Icon icon;
 		public ToolIcon( URL u ) {
@@ -4123,6 +4270,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	static abstract class LabeledToggleAction extends LabeledAction {
+		private static final long serialVersionUID = 1L;
 		boolean sel;
 		Vector<ActionListener> lis;
 		public void addActionListener( ActionListener l ) {
@@ -4170,6 +4318,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	static abstract class LabeledAction extends AbstractAction {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 		public LabeledAction( String desc ) {
 			if( desc != null ) {
 	        		putValue( Action.NAME, desc );
@@ -4200,10 +4352,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 	}
 	
-	int connPercent( Vector v ) {
+	int connPercent( List<Entry> v ) {
 		int cnt = 0;
 		for( int i = 0; i < v.size(); ++i ) {
-			if( ((Entry)v.elementAt(i)).getStation().isBusy() )
+			if( ((Entry)v.get(i)).getStation().isBusy() )
 				++cnt;
 		}
 		if( v.size() == 0 )
@@ -4251,7 +4403,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	void checkConnections() {
 //		new Throwable("Check Connections: "+ssa.getConnectCount() ).printStackTrace();
 		if( !ssa.isConnected() ) {
-			new ComponentUpdateThread( (JComponent)null ) {
+			new ComponentUpdateThread<Void>( (JComponent)null ) {
 				public void setup() {
 					super.setup();
 					conn.setText("");
@@ -4260,7 +4412,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					getAction("Trans").setEnabled(false);
 					setTxMode( false );
 				}
-				public Object doInBackground() {
+				public Void construct() {
 					try {
 						updateLogon();
 					} catch( Exception ex ) {
@@ -4274,10 +4426,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	synchronized boolean connectTo( final StationData sd, final boolean connectFrom ) {
 		if( ssa.isConnectedTo( sd.getIPAddr() ) ) {
+			log.info("Already connected to "+sd );
 //			new Throwable("Already connected to: "+sd.getIPAddr() ).printStackTrace();
 			return false;
 		}
 		if( sd.getIPAddr() == null ) {
+			log.info("No IP Address supplied for: "+sd );
 			return false;
 		}
 		progress( (connectFrom ?
@@ -4286,14 +4440,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		final Object lock = new Object();
 		final boolean connected[] = new boolean[1];
 		final boolean refused[] = new boolean[1];
-		final LinkEventListener l = new LinkEventListener() {
-			public void processEvent( LinkEvent ev ) {
-				log.finer("Got event: "+ev+", expected addr: "+sd.getIPAddr() );
-//				new Throwable().printStackTrace();
+		final LinkEventListener<Object> l = new LinkEventListener<Object>() {
+			@Override
+			public void processEvent( LinkEvent<Object> ev ) {
+				log.info("Got event: ("+ev+"), expected addr: "+sd.getIPAddr() );
+
 				// Is this a connect for the requested station?
-				if( !ev.isSend() && (ev.typ == ev.SDES_EVENT
-						|| ev.typ == ev.NETDATA_EVENT
-						|| ev.typ == ev.INFO_EVENT) &&
+				if( !ev.isSend() && (ev.typ == LinkEvent.SDES_EVENT
+						|| ev.typ == LinkEvent.NETDATA_EVENT
+						|| ev.typ == LinkEvent.INFO_EVENT) &&
 						 sd.getIPAddr().equals((String)ev.getSource()) ) {
 					connected[0] = true;
 					synchronized( lock ) {
@@ -4301,6 +4456,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					}
 					runInSwing( new Runnable() {
 						public void run() {
+							progress( (connectFrom ?
+									"Connection From" :"Connecting to: ")+
+									sd.getCall()+" "+sd.getLocation() );
+
 							conn.setText( "Connected to: "+sd.getCall()+
 								" "+sd.getLocation() );
 							getAction("Trans").setEnabled(true);
@@ -4310,7 +4469,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					if(cons != null )
 						cons.addConnectedStation(sd);
 					removeLinkEventListener( this );
-				} else if( ev.typ == ev.DISC_EVENT ) {
+				} else if( ev.typ == LinkEvent.DISC_EVENT ) {
 					// Make sure this is the disconnect for this instance.
 					if( sd.getIPAddr().equals((String)ev.getSource()) ) {
 						connected[0] = false;
@@ -4346,9 +4505,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 		};
 		final Throwable reason[] = new Throwable[1];
-		new ComponentUpdateThread((JComponent)null) {
+		
+		log.info("Starting connect in ComponentUpdateThread");
+		new ComponentUpdateThread<Object>((JComponent)null) {
 			public void setup() {
 				super.setup();
+				log.info("Setting up components before connect");
 				conn.setText( (connectFrom ?
 					"Connection from: " :
 					"Connecting to: ")+sd.getCall()+" "+sd.getLocation() );
@@ -4357,15 +4519,17 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				ipaddr.setText( sd.getIPAddr()+":"+sd.getDataPort()+"/"+sd.getControlPort() );
 				getAction("Trans").setEnabled(!txActive);
 			}
-			public Object doInBackground() {
+			public Object construct() {
 				try {
 //					conn.setText( "Connecting to: "+sd.getCall()+
 //						" "+sd.getLocation() );
+					log.info("Connecting to "+sd.getCall()+" at "+sd.getIPAddr()+", from: "+connectFrom);
 					connectTo( sd.getCall(), sd.getIPAddr(), l, 
 						sd.getCall().charAt(0) == '*',
 						sd.getDataPort(), 
 						sd.getControlPort(),
 						connectFrom );
+					log.info("connected with resolved IP: "+sd.resolvedIPAddress() );
 					return sd.resolvedIPAddress();
 				} catch( java.net.UnknownHostException ex ) {
 					// If we can't resolve, just use the IP address
@@ -4378,6 +4542,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			public void finished() {
 				try {
 					Object val = getValue();
+					log.info("Connection finishing with: "+val);
 					if( val instanceof Throwable ) {
 						reason[0] = (Throwable)val;
 						log.log(Level.WARNING, val.toString(), ((Throwable)val) );
@@ -4409,7 +4574,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					saveFavorites();
 //					ipaddr.setText( (String)val );
 					ipaddr.setText( val+":"+sd.getDataPort()+"/"+sd.getControlPort() );
+					log.info("Checking connections");
 					checkConnections();
+					log.info("Sending connect event");
 					sendEvent( new LinkEvent<StationData>(
 						this, !connectFrom, LinkEvent.STATION_CONN_EVENT, 
 							ssa.getConnectCount(), sd ) );
@@ -4461,13 +4628,13 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public void disconnectFrom() throws IOException {
 		if( isConnected() == false )
 			return;
-		Vector<Connection> v = ssa.getConnectedList();
+		List<Connection> v = ssa.getConnectedList();
 		final JDialog d = new JDialog( this, "Select Stations to Disconnect", true );
 		JPanel p = new JPanel();
-		JList l = new JList(v);
+		connList = new JList<Connection>(connModel= new ListListModel<Connection>(v));
 		Packer pk = new Packer(p);
-		pk.pack(new JScrollPane(l)).fillboth();
-		l.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+		pk.pack(new JScrollPane(connList)).fillboth();
+		connList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		p.setBorder(BorderFactory.createTitledBorder("Connected Stations") );
 		pk = new Packer( d.getContentPane() );
 		pk.pack( p ).gridx(0).gridy(0).fillx().gridw(2);
@@ -4500,9 +4667,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		d.setVisible(true);
 		if( cancelled[0] )
 			return;
-		int[]arr = l.getSelectedIndices();
+		int[]arr = connList.getSelectedIndices();
 		for( int i = 0; i < arr.length; ++i ) {
-			Connection conn = (Connection)v.elementAt(arr[i]);
+			Connection conn = v.get(arr[i]);
 			disconnectFrom( conn.getAddress() );
 		}
 		checkConnections();
@@ -4513,7 +4680,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		Object root = locmod.getRoot();
 		Entry ne = null;
 		for( int i = 0; i < staList.size(); ++i ) {
-			Entry e = staList.elementAt(i);
+			Entry e = staList.get(i);
 			String ce = CountryAccess.countryFor( e.getStation().getCall() );
 			log.finer("Find country("+ce+") for call: "+e.getStation().getCall() );
 			if( ce != null && ce.equals(country) ) {
@@ -4522,10 +4689,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 		}
 		if( ne != null ) {
-			boolean found = false;
 			locations.clearSelection();
 			if( searchTree( locations, ne, locmod, root, new TreePath(new Object[]{root}) ) ) {
-				found = true;
 				stTabs.setSelectedIndex(2);
 				stTabs.repaint();
 			}
@@ -4566,7 +4731,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 	}
 
-	public void connectTo( String name, String addr, LinkEventListener l,
+	public void connectTo( String name, String addr, LinkEventListener<Object> l,
 			boolean isConf, int data, int ctrl, boolean connectFrom ) throws Exception {
 		StationData dt = StationData.stationFor( pr.getCallSign() );
 		if( dt == null ) {
@@ -4616,10 +4781,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return "not connected";
 		if( ssa.getConnectCount() > 1 ) {
 			info = "Station "+pr.getCallSign() + "\r\r";
-			Vector v = ssa.getConnectedList();
+			List<Connection> v = ssa.getConnectedList();
 			for( int i = 0; i < v.size(); ++i ) {
-				Connection c = 
-					(Connection)v.elementAt(i);
+				Connection c = v.get(i);
 				info += c.isTrans() ? "> " : "";
 				info += c.getName()+"\r";
 			}
@@ -4635,9 +4799,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		return info;
 	}
 
-	static class NamedVector<T> extends Vector<T> {
+	static class NamedList<T> extends ArrayList<T> {
+		private static final long serialVersionUID = 1L;
 		String name;
-		public NamedVector( String name ) {
+		public NamedList( String name ) {
 			this.name = name;
 		}
 		public String toString() {
@@ -4695,28 +4860,28 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	AlarmManager alarmMgr = new AlarmManager(Javecho.this);
 
 	private class MyModel implements TreeModel {
-		volatile Vector<Entry> data;
+		volatile List<Entry> data;
 		volatile String root;
-		NamedVector<NamedVector> nodes = new NamedVector<NamedVector>("Loading...");
-		Vector<TreeModelListener> listeners = new Vector<TreeModelListener>();
+		NamedList<NamedList> nodes = new NamedList<NamedList>("Loading...");
+		List<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
 		String name;
 		volatile boolean dbg = true;
-		NamedVector<Entry> stations;
-		NamedVector<Entry> links;
-		NamedVector<Entry> repeat;
-		NamedVector<Entry> conf;
-		NamedVector<Entry> msg;
+		NamedList<Entry> stations;
+		NamedList<Entry> links;
+		NamedList<Entry> repeat;
+		NamedList<Entry> conf;
+//		NamedList<Entry> msg;
 
 		public Entry findStation( String call ) {
 			for( int i = 0; i < data.size(); ++i ) {
-				Entry e = data.elementAt(i);
+				Entry e = data.get(i);
 				if( e.getStation().getCall().equals(call) )
 					return e;
 			}
 			return null;
 		}
 
-		public Vector<Entry> getContents() {
+		public List<Entry> getContents() {
 			return data;
 		}
 
@@ -4724,15 +4889,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return name;
 		}
 
-		public MyModel( Vector<Entry> v, String name, boolean debug ) {
+		public MyModel( List<Entry> v, String name, boolean debug ) {
 			this.name = name;
 			root = name;
 			dbg = debug;
 			setData( v );
 		}
 
-		public void setData( Vector<Entry> v ) {
-			data = new Vector<Entry>();
+		public void setData( List<Entry> v ) {
+			data = new ArrayList<Entry>();
 			fillData(v);
 			updateAll();
 		}
@@ -4743,9 +4908,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				if(dbg) progress(this+":"+nodes+": size="+nodes.size() );
 				return nodes.size();
 			}
-			if( node instanceof NamedVector == false )
+			if( node instanceof NamedList == false )
 				return 0;
-			NamedVector v = (NamedVector)node;
+			NamedList v = (NamedList)node;
 			if(dbg) progress(this+": "+v+": size="+v.size() );
 			return v.size();
 		}
@@ -4768,7 +4933,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					", no child index" );
 				return -1;
 			}
-			NamedVector v = (NamedVector)nodes.elementAt(idx);
+			NamedList v = nodes.get(idx);
 			if(dbg) progress( parent+
 				": index of "+node+" = "+v.indexOf( node ) );
 			return v.indexOf( node );
@@ -4776,7 +4941,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		public void addTreeModelListener( TreeModelListener lis ) {
 			if(dbg) progress( this+": addTreeModelListener("+lis+")" );
-			listeners.addElement( lis );
+			listeners.add( lis );
 			TreeModelEvent ev = new TreeModelEvent( this, new Object[]{ root } );
 				lis.treeStructureChanged( ev );
 				lis.treeNodesChanged( ev );
@@ -4784,7 +4949,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		public void removeTreeModelListener( TreeModelListener lis ) {
 			if(dbg) progress( this+": removeTreeModelListener("+lis+")" );
-			listeners.removeElement( lis );
+			listeners.remove( lis );
 		}
 
 		public void valueForPathChanged( TreePath path, Object value ) {
@@ -4796,45 +4961,45 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			if(dbg) progress( this+": getChild("+parent+","+idx+")" );
 			if( parent == root ) {
 				if(dbg) progress(parent+": child at "+idx+" = "+
-					nodes.elementAt(idx) );
-				return nodes.elementAt(idx);
+					nodes.get(idx) );
+				return nodes.get(idx);
 			}
-			NamedVector v = (NamedVector)parent;
+			NamedList v = (NamedList)parent;
 			if(dbg) progress(parent+": child at "+
-				idx+" = "+v.elementAt(idx) );
-			return v.elementAt(idx);
+				idx+" = "+v.get(idx) );
+			return v.get(idx);
 		}
 
 		public synchronized Object getRoot() {
 			return root;
 		}
 
-		void fillData(Vector<Entry> v) {
+		void fillData(List<Entry> v) {
 			if( stations == null )
-				stations = new NamedVector<Entry>("Stations");
+				stations = new NamedList<Entry>("Stations");
 			else
-				stations.removeAllElements();
+				stations.clear();
 			if( links == null )
-				links = new NamedVector<Entry>("Links");
+				links = new NamedList<Entry>("Links");
 			else
-				links.removeAllElements();
+				links.clear();
 			if( repeat == null )
-				repeat = new NamedVector<Entry>("Repeaters");
+				repeat = new NamedList<Entry>("Repeaters");
 			else
-				repeat.removeAllElements();
+				repeat.clear();
 			if( conf == null )
-				conf = new NamedVector<Entry>("Conferences");
+				conf = new NamedList<Entry>("Conferences");
 			else
-				conf.removeAllElements();
-			nodes = new NamedVector<NamedVector>("nodes");
+				conf.clear();
+			nodes = new NamedList<NamedList>("nodes");
 			if( name.equals("Favorites") == true || pr.isRepeatersInStationList() )
-				nodes.addElement( repeat );
+				nodes.add( repeat );
 			if( name.equals("Favorites") == true || pr.isLinksInStationList() )
-				nodes.addElement( links );
+				nodes.add( links );
 			if( name.equals("Favorites") == true || pr.isUsersInStationList() )
-				nodes.addElement( stations );
+				nodes.add( stations );
 			if( name.equals("Favorites") == true || pr.isConferencesInStationList() )
-				nodes.addElement( conf );
+				nodes.add( conf );
 			addData(v);
 			Comparator<Entry> e = new EntryComparator();
 			if( name.equals("Favorites") == true || pr.isRepeatersInStationList() )
@@ -4847,10 +5012,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				Collections.sort( conf, e );
 		}
 
-		private void addData( Vector<Entry> v ) {
+		private void addData( List<Entry> v ) {
 			alarmMgr.almOnce = false;
 			for( int i = 0; i < v.size(); ++i ) {
-				Entry e = v.elementAt(i);
+				Entry e = v.get(i);
 				addData( e, false );
 			}
 			alarmMgr.firstAlm = false;
@@ -4866,7 +5031,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		void updatePath(TreePath pth) {
 			TreeModelEvent ev = new TreeModelEvent( this, pth );
 			for( int i = 0; i < listeners.size(); ++i ) {
-				TreeModelListener lis = (TreeModelListener)listeners.elementAt(i);
+				TreeModelListener lis = (TreeModelListener)listeners.get(i);
 				lis.treeStructureChanged( ev );
 				lis.treeNodesChanged( ev );
 			}
@@ -4875,7 +5040,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		void deletedPath(TreePath pth) {
 			TreeModelEvent ev = new TreeModelEvent( this, pth );
 			for( int i = 0; i < listeners.size(); ++i ) {
-				TreeModelListener lis = (TreeModelListener)listeners.elementAt(i);
+				TreeModelListener lis = (TreeModelListener)listeners.get(i);
 				lis.treeNodesRemoved( ev );
 			}
 		}
@@ -4895,7 +5060,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				}
 				return;
 			}
-			if( e.getType() != e.TYPE_MSG ) {
+			if( e.getType() != Entry.TYPE_MSG ) {
 				if( e.getStation().disconnected() )
 					alarmMgr.checkAlarms(e.getStation());
 				else if( e.getStation().connected() )
@@ -4906,38 +5071,38 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					alarmMgr.checkAlarms(e.getStation());
 			}
 			boolean add = false;
-			if( pr.isConferencesInStationList() && e.getType() == e.TYPE_CONF ) {
+			if( pr.isConferencesInStationList() && e.getType() == Entry.TYPE_CONF ) {
 				add = true;
-			} else if( pr.isUsersInStationList() && e.getType() == e.TYPE_STATION ) {
+			} else if( pr.isUsersInStationList() && e.getType() == Entry.TYPE_STATION ) {
 				add = true;
-			} else if( pr.isLinksInStationList() && e.getType() == e.TYPE_LINK ) {
+			} else if( pr.isLinksInStationList() && e.getType() == Entry.TYPE_LINK ) {
 				add = true;
-			} else if( pr.isRepeatersInStationList() && e.getType() == e.TYPE_REPEATER ) {
+			} else if( pr.isRepeatersInStationList() && e.getType() == Entry.TYPE_REPEATER ) {
 				add = true;
-			} else if( e.getType() == e.TYPE_MSG ) {
+			} else if( e.getType() == Entry.TYPE_MSG ) {
 				add = true;
 			}
 			if( name.equals("Favorites") == false && !add )
 				return;
-			data.addElement(e);
+			data.add(e);
 			if(update) Collections.sort(data,new EntryComparator());
-			NamedVector<Entry> w = null;
-			if( e.getType() == e.TYPE_LINK )
+			NamedList<Entry> w = null;
+			if( e.getType() == Entry.TYPE_LINK )
 				w = links;
-			else if( e.getType() == e.TYPE_REPEATER )
+			else if( e.getType() == Entry.TYPE_REPEATER )
 				w = repeat;
-			else if( e.getType() == e.TYPE_STATION )
+			else if( e.getType() == Entry.TYPE_STATION )
 				w = stations;
-			else if( e.getType() == e.TYPE_CONF )
+			else if( e.getType() == Entry.TYPE_CONF )
 				w = conf;
-			else if( e.getType() == e.TYPE_MSG ){
-				sysmsg.addElement(e);
+			else if( e.getType() == Entry.TYPE_MSG ){
+				sysmsg.add(e);
 				log.fine("add server error message: "+e );
 				return;//w = msg;
 			}
 			if( w == null )
 				throw new NullPointerException( e.getType()+": Entry type unknown" );
-			w.addElement(e);
+			w.add(e);
 			if( update ) {
 				Collections.sort(w,new EntryComparator());
 				updatePath( new TreePath( new Object[]{ root, w } ) );
@@ -4949,20 +5114,20 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 
 		private void removeData( Entry e, boolean update ) {
-			NamedVector w = null;
-			if( e.getType() == e.TYPE_LINK )
+			NamedList<?> w = null;
+			if( e.getType() == Entry.TYPE_LINK )
 				w = links;
-			else if( e.getType() == e.TYPE_REPEATER )
+			else if( e.getType() == Entry.TYPE_REPEATER )
 				w = repeat;
-			else if( e.getType() == e.TYPE_STATION )
+			else if( e.getType() == Entry.TYPE_STATION )
 				w = stations;
-			else if( e.getType() == e.TYPE_CONF )
+			else if( e.getType() == Entry.TYPE_CONF )
 				w = conf;
-			else if( e.getType() == e.TYPE_MSG )
+			else if( e.getType() == Entry.TYPE_MSG )
 				return;//w = msg;
 			if( w == null )
 				throw new NullPointerException( e.getType()+": Entry type unknown" );
-			w.removeElement(e);
+			w.remove(e);
 			if( update )
 				deletedPath( new TreePath( new Object[]{ root, w, e } ) );
 		}
@@ -5001,11 +5166,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	private class MyLocModel implements TreeModel {
-		Vector<Entry> data;
+		List<Entry> data;
 		NodeList root;
-		Vector nodes = new Vector();
-		Vector<TreeModelListener> listeners = 
-			new Vector<TreeModelListener>();
+		List nodes = new ArrayList();
+		List<TreeModelListener> listeners = 
+			new ArrayList<TreeModelListener>();
 		String name;
 		volatile boolean dbg;
 //		ArrayList continents;
@@ -5023,7 +5188,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return null;
 		}
 
-		public Vector getContents() {
+		public List getContents() {
 			return data;
 		}
 
@@ -5031,14 +5196,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return name;
 		}
 
-		public MyLocModel( Vector<Entry> v, boolean debug ) {
+		public MyLocModel( List<Entry> v, boolean debug ) {
 			root = new NodeList( "Stations", new ArrayList<Object>());
 			dbg = debug;
 			setData( v );
 		}
 
-		public synchronized void setData( Vector<Entry> v ) {
-			data = new Vector<Entry>();
+		public synchronized void setData( List<Entry> v ) {
+			data = new ArrayList<Entry>();
 			fillData(v);
 			updateAll();
 		}
@@ -5057,7 +5222,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		public void addTreeModelListener( TreeModelListener lis ) {
 			if(dbg) progress( this+": addTreeModelListener("+lis+")" );
-			listeners.addElement( lis );
+			listeners.add( lis );
 			TreeModelEvent ev = new TreeModelEvent( this, new Object[]{ root } );
 				lis.treeStructureChanged( ev );
 				lis.treeNodesChanged( ev );
@@ -5065,7 +5230,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		public void removeTreeModelListener( TreeModelListener lis ) {
 			if(dbg) progress( this+": removeTreeModelListener("+lis+")" );
-			listeners.removeElement( lis );
+			listeners.remove( lis );
 		}
 
 		public void valueForPathChanged( TreePath path, Object value ) {
@@ -5082,9 +5247,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return root;
 		}
 
-		void fillData(Vector v) {
-			Hashtable<String,String> cn = 
-				new Hashtable<String,String>();
+		void fillData(List v) {
+			Map<String,String> cn = 
+				new HashMap<String,String>();
 			cn.put("AF","Africa");
 			cn.put("AN","Antartica");
 			cn.put("AS","Asia");
@@ -5097,11 +5262,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			ArrayList<String> l = Collections.list( CountryAccess.continents() );
 			Collections.sort(l);
 			root.list = new ArrayList<Object>();
-			Iterator it = l.iterator();
-			Hashtable<String,NodeList> cs = new Hashtable<String,NodeList>();
-			Hashtable<String,NodeList> ct = new Hashtable<String,NodeList>();
-			Vector<NodeList> rlv = new Vector<NodeList>();
-			rlv.setSize(10);
+			Iterator<String> it = l.iterator();
+			Map<String,NodeList> cs = new HashMap<String,NodeList>();
+			Map<String,NodeList> ct = new HashMap<String,NodeList>();
+			List<NodeList> rlv = new ArrayList<NodeList>();
+
 			while( it.hasNext() ) {
 				String n = (String)it.next();
 				NodeList nl;
@@ -5111,23 +5276,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				root.list.add( nl );
 			}
 			for( int i = 0; i < v.size(); ++i ) {
-				Entry e = (Entry)v.elementAt(i);
+				Entry e = (Entry)v.get(i);
 				StationData sd = e.getStation();
 				String call = sd.getCall();
-				if( e.type == e.TYPE_CONF || e.type == e.TYPE_MSG )
+				if( e.type == Entry.TYPE_CONF || e.type == Entry.TYPE_MSG )
 					continue;
 				boolean add = false;
 				String type = "unknown";
-				if( pr.isConferencesInStationList() && e.getType() == e.TYPE_CONF ) {
+				if( pr.isConferencesInStationList() && e.getType() == Entry.TYPE_CONF ) {
 					add = true;
 					type = "Conf";
-				} else if( pr.isUsersInStationList() && e.getType() == e.TYPE_STATION ) {
+				} else if( pr.isUsersInStationList() && e.getType() == Entry.TYPE_STATION ) {
 					add = true;
 					type = "Station";
-				} else if( pr.isLinksInStationList() && e.getType() == e.TYPE_LINK ) {
+				} else if( pr.isLinksInStationList() && e.getType() == Entry.TYPE_LINK ) {
 					add = true;
 					type = "Link";
-				} else if( pr.isRepeatersInStationList() && e.getType() == e.TYPE_REPEATER ) {
+				} else if( pr.isRepeatersInStationList() && e.getType() == Entry.TYPE_REPEATER ) {
 					add = true;
 					type = "Repeater";
 				}
@@ -5159,13 +5324,24 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							break;
 						}
 					}
-					NodeList rl = (NodeList)rlv.elementAt(r);
+					NodeList rl = null;
+					if(r >= 0 && r < rlv.size()) {
+						log.log(Level.FINE,"rlv has {0} items, getting {1}", new Object[]{rlv.size(), r} );
+						rlv.get(r);
+					}
 					if( rl == null ) {
 						rl = new NodeList( "Region "+r,
 							new ArrayList<Object>() );
 						cl.list.add( rl );
 						ct.put( ""+r, rl );
-						rlv.setElementAt( rl, r );
+						if( r < rlv.size() )
+							rlv.set( r, rl );
+						else {
+							while( r >= rlv.size() ) {
+								rlv.add(null);
+							}
+							rlv.set( r, rl );
+						}
 					}
 					cl = rl;
 				}
@@ -5210,9 +5386,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			log.finer("Sorting completed....");
 		}
 
-		private void addData( Vector v ) {
+		private void addData( List<Entry> v ) {
 			for( int i = 0; i < v.size(); ++i ) {
-				Entry e = (Entry)v.elementAt(i);
+				Entry e = v.get(i);
 				addData( e, false );
 			}
 		}
@@ -5226,7 +5402,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				public void run() {
 					TreeModelEvent ev = new TreeModelEvent( this, pth );
 					for( int i = 0; i < listeners.size(); ++i ) {
-						TreeModelListener lis = (TreeModelListener)listeners.elementAt(i);
+						TreeModelListener lis = listeners.get(i);
 						lis.treeStructureChanged( ev );
 						lis.treeNodesChanged( ev );
 					}
@@ -5237,7 +5413,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		void deletedPath(TreePath pth) {
 			TreeModelEvent ev = new TreeModelEvent( this, pth );
 			for( int i = 0; i < listeners.size(); ++i ) {
-				TreeModelListener lis = (TreeModelListener)listeners.elementAt(i);
+				TreeModelListener lis = listeners.get(i);
 				lis.treeNodesRemoved( ev );
 			}
 		}

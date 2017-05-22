@@ -1,5 +1,8 @@
 package org.wonderly.ham.echolink;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 /**
  *  This class provides the events created as the
  *  Javecho system process events for echolink operations
@@ -48,7 +51,12 @@ public class LinkEvent<T> extends java.util.EventObject {
 	}
 
 	public String toString() {
-		return "LinkEvent: src="+getSource()+", send="+send+", type="+typeVal()+", value="+value;
+		String src;
+		Object s = getSource();
+
+		src = s.toString();
+		
+		return "LinkEvent: src="+src+", send="+send+", type="+typeVal()+", value="+value;
 	}
 
 	public LinkEvent( Object src, boolean send, int type, int val ) {
