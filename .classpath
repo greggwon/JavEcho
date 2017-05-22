@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java/main"/>
+	<classpathentry kind="lib" path="modules/ext/cmu_time_awb.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmu_us_kal.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmuawb.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmukal16.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmukal8.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmulex.jar"/>
+	<classpathentry kind="lib" path="modules/ext/cmutimelex.jar"/>
+	<classpathentry kind="lib" path="modules/ext/en_us.jar"/>
+	<classpathentry kind="lib" path="modules/ext/freetts.jar"/>
+	<classpathentry kind="lib" path="modules/ext/jsapi.jar"/>
+	<classpathentry kind="lib" path="modules/ext/wincomm.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Packer"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/SwingUtil"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
