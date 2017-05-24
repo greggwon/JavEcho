@@ -23,4 +23,15 @@ public class SwingStuff {
 			}
 		}
 	}
+	public static void runInSwingLater( final Runnable r ) {
+		if( SwingUtilities.isEventDispatchThread() ) {
+			r.run();
+		} else {
+			try {
+				SwingUtilities.invokeLater(r);
+			} catch( Exception ex ) {
+				log.log( Level.SEVERE, ex.toString(), ex );
+			}
+		}
+	}
 }

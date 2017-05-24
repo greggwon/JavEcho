@@ -723,11 +723,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public void setAverage( final int val, final int max ) {
 		if( average != null ) {
-			runInSwing( new Runnable() {
-				public void run() {
-					average.setValues(val, max );
-					average.repaint();
-				}
+			runInSwingLater( ()-> {
+				average.setValues(val, max );
+				average.repaint();
 			});
 		}
 	}
@@ -1267,6 +1265,20 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		} else {
 			try {
 				SwingUtilities.invokeAndWait( r );
+			} catch( Exception ex ) {
+			}
+		}
+	}
+	
+	/**
+	 *  Run the indicated Runnable inside of a swing worker thread.
+	 */
+	static void runInSwingLater( Runnable r ) {
+		if( SwingUtilities.isEventDispatchThread() ) {
+			r.run();
+		} else {
+			try {
+				SwingUtilities.invokeLater( r );
 			} catch( Exception ex ) {
 			}
 		}
@@ -2969,6 +2981,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return;
 		final Object node = path.getLastPathComponent();
 		new ComponentUpdateThread<Boolean>( getAction("Conn") ) {
+			@Override
 			public Boolean construct() {
 				if( node instanceof Entry ) {
 					Entry ent = (Entry)node;
@@ -4424,7 +4437,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 	}
 
-	synchronized boolean connectTo( final StationData sd, final boolean connectFrom ) {
+	boolean connectTo( final StationData sd, final boolean connectFrom ) {
 		if( ssa.isConnectedTo( sd.getIPAddr() ) ) {
 			log.info("Already connected to "+sd );
 //			new Throwable("Already connected to: "+sd.getIPAddr() ).printStackTrace();
@@ -5220,12 +5233,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return ((NodeList)parent).indexOf( node );
 		}
 
+		@Override
 		public void addTreeModelListener( TreeModelListener lis ) {
 			if(dbg) progress( this+": addTreeModelListener("+lis+")" );
-			listeners.add( lis );
-			TreeModelEvent ev = new TreeModelEvent( this, new Object[]{ root } );
+			runInSwing( ()->{
+				listeners.add( lis );
+				TreeModelEvent ev = new TreeModelEvent( Javecho.this, new Object[]{ root } );
 				lis.treeStructureChanged( ev );
 				lis.treeNodesChanged( ev );
+			});
 		}
 
 		public void removeTreeModelListener( TreeModelListener lis ) {
@@ -5247,7 +5263,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return root;
 		}
 
-		void fillData(List v) {
+		void fillData(List<Entry> v) {
 			Map<String,String> cn = 
 				new HashMap<String,String>();
 			cn.put("AF","Africa");
@@ -5262,21 +5278,20 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			ArrayList<String> l = Collections.list( CountryAccess.continents() );
 			Collections.sort(l);
 			root.list = new ArrayList<Object>();
-			Iterator<String> it = l.iterator();
+
 			Map<String,NodeList> cs = new HashMap<String,NodeList>();
 			Map<String,NodeList> ct = new HashMap<String,NodeList>();
 			List<NodeList> rlv = new ArrayList<NodeList>();
 
-			while( it.hasNext() ) {
-				String n = (String)it.next();
+			for( String n : l ) {
 				NodeList nl;
 				cs.put( n, nl = new NodeList(
 					(String)cn.get(n), new ArrayList<Object>() ) );
 				ct.put( n, nl );
 				root.list.add( nl );
 			}
-			for( int i = 0; i < v.size(); ++i ) {
-				Entry e = (Entry)v.get(i);
+
+			for( Entry e : v ){
 				StationData sd = e.getStation();
 				String call = sd.getCall();
 				if( e.type == Entry.TYPE_CONF || e.type == Entry.TYPE_MSG )
@@ -5360,8 +5375,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					
 								return e1.getStation().getCall().compareTo( e2.getStation().getCall() );
 							} else {
-							return o1.toString().compareTo( o2.toString() );
-//							throw new ClassCastException( o1.getClass().getName()+" <> "+o2.getClass().getName() );
+								return o1.toString().compareTo( o2.toString() );
+//								throw new ClassCastException( o1.getClass().getName()+" <> "+o2.getClass().getName() );
 							}
 //						} else if( o2 instanceof Entry ) {
 //							throw new ClassCastException( o1.getClass().getName()+" <> "+o2.getClass().getName() );

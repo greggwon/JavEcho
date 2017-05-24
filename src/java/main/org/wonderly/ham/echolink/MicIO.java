@@ -38,7 +38,7 @@ class MicIO implements Runnable {
 		aeh = mgr;
 		format = new AudioFormat( 8000, 16, 1, true, true );
 		info = new DataLine.Info( TargetDataLine.class, format );
-		log.finer("MicIO: format:"+format+", info: "+info );
+		log.info("MicIO: format:"+format+", info: "+info );
 		if( ! AudioSystem.isLineSupported( info ) ) {
 			log.log(Level.SEVERE, "Format Not Supported: "+format,
 				new InvalidSoundSystemConfigurationException(
@@ -107,7 +107,7 @@ class MicIO implements Runnable {
         // and make sure a compatible line is supported.
 		format = new AudioFormat( 8000, 16, 1, true, true );
 		info = new DataLine.Info( TargetDataLine.class, format );
-		log.finer("MicIO: format:"+format+", info: "+info );
+		log.info("MicIO: new line format:"+format+", info: "+info );
 		if( ! AudioSystem.isLineSupported( info ) ) {
 			log.log(Level.SEVERE, "Format Not Supported: "+format,
 				new InvalidSoundSystemConfigurationException(
@@ -261,7 +261,7 @@ class MicIO implements Runnable {
 				
 	private AudioSender aSend;
 	public void run() {
-		log.fine("MicIO running");
+		log.info("MicIO running");
 		setup();
 
 		// create the audio sender that forwards audio
@@ -517,7 +517,7 @@ class MicIO implements Runnable {
 					encoder.encode( strm, outdata );
             	}
             } catch( Exception ex ) {
-            	ex.printStackTrace();
+            	log.log(Level.SEVERE, ex.toString(), ex);
             }
  
 			byte[]edata = outdata.toByteArray();
@@ -549,8 +549,8 @@ class MicIO implements Runnable {
 					if( !voxState ) {
 						log.finer("Audio Sender vox unsquelching "+
 							average+" > "+voxlim );
-						LinkEvent le = new LinkEvent( MicIO.this,
-							true, LinkEvent.VOX_OPEN_EVENT, (int)average );
+						LinkEvent<Number> le = new LinkEvent<Number>( MicIO.this,
+							true, LinkEvent.VOX_OPEN_EVENT, average );
 						mgr.je.sendEvent( le );
 						voxState = true;
 						firstvox = true;
@@ -567,8 +567,8 @@ class MicIO implements Runnable {
 								voxtimer > prm.getRxCtrlVoxdelay() ) {
 							log.finer("Audio Sender vox squelching "+
 								average+" <= "+voxlim );
-							LinkEvent le = new LinkEvent( MicIO.this,
-								true, LinkEvent.VOX_CLOSE_EVENT, (int)average );
+							LinkEvent<Number> le = new LinkEvent<Number>( MicIO.this,
+								true, LinkEvent.VOX_CLOSE_EVENT, average );
 							mgr.je.sendEvent( le );
 							voxState = false;
 //							firstvox = true;

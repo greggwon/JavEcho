@@ -59,6 +59,7 @@ public class ConnectionManager implements AudioEventHandler {
 	}
 	
 	private void startAudioListeners() {
+		log.info("Starting "+audLis.size()+" audio listeners: "+getClass().getName());
 		for( int i = 0; i < audLis.size(); ++i ) {
 			AudioEventListener lis = audLis.elementAt(i);
 			log.finer("startAudioListener: "+lis );
