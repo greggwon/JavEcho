@@ -1,10 +1,14 @@
 package org.wonderly.ham.echolink;
 
 import javax.sound.sampled.*;
+import javax.sound.sampled.BooleanControl.Type;
+
 import java.util.logging.*;
 import java.util.*;
 import gsm.encoder.*;
 import java.io.*;
+
+import org.wonderly.ham.echolink.LinkEvent.LinkMode;
 import org.wonderly.ham.echolink.audio.*;
 
 class MicIO implements Runnable {
@@ -57,6 +61,44 @@ class MicIO implements Runnable {
 					"formats supported: \n\n"+format);
 			}
 		}
+	}
+	
+	public void setMicGain( float percent ) {
+		Port lineIn = null;
+        FloatControl volCtrl = null;
+        Mixer mixer = null;
+        try
+        {
+			Mixer.Info infos[] = AudioSystem.getMixerInfo();
+			Mixer.Info inf = infos[prm.getAudioDevice()];
+			mixer = AudioSystem.getMixer(inf);
+			final int maxLines = mixer.getMaxLines(Port.Info.MICROPHONE);
+			if (maxLines > 0) {
+				lineIn = (Port) mixer.getLine(Port.Info.MICROPHONE);
+				lineIn.open();
+				volCtrl = (FloatControl) lineIn.getControl(FloatControl.Type.VOLUME);
+				volCtrl.setValue(percent);
+			}
+        } catch( Exception ex ) {
+        	log.log(Level.SEVERE, ex.toString(), ex );
+        }
+	}
+	
+	public int calculateRMSLevel(byte[] audioData)
+	{ 
+	    long lSum = 0;
+	    for(int i=0; i < audioData.length; i++)
+	        lSum = lSum + audioData[i];
+
+	    double dAvg = lSum / audioData.length;
+	    double sumMeanSquare = 0d;
+
+	    for(int j=0; j < audioData.length; j++)
+	        sumMeanSquare += Math.pow(audioData[j] - dAvg, 2d);
+
+	    double averageMeanSquare = sumMeanSquare / audioData.length;
+
+	    return (int)(Math.pow(averageMeanSquare,0.5d) + 0.5);
 	}
 
 	public void close() {
@@ -137,6 +179,13 @@ class MicIO implements Runnable {
 			        Mixer.Info infos[] = AudioSystem.getMixerInfo();
 			        Mixer.Info inf = infos[prm.getAudioDevice()];
 			        Mixer mix = AudioSystem.getMixer( inf );
+					final int maxLines = mix.getMaxLines(Port.Info.MICROPHONE);
+					if (maxLines > 0) {
+						Port lineIn = (Port) mix.getLine(Port.Info.MICROPHONE);
+						FloatControl volCtrl = (FloatControl) lineIn.getControl(FloatControl.Type.VOLUME);
+						mgr.je.setMicGainControl( volCtrl );
+					}
+
 			        if( mix.getTargetLineInfo( info ) != null ) {
 			        	try {
 				        	TargetDataLine dt = (TargetDataLine)
@@ -147,17 +196,33 @@ class MicIO implements Runnable {
 				        	progress("with: "+dt );
 				        	spkline = new LineWrapper( dt );
 			        	} catch( Exception ex ) {
-			        		ex.printStackTrace();
+							log.log(Level.SEVERE, ex.toString(), ex);
 			        	}
 			        } else {
 			        	progress("No overriding TargetDataLine found" );
 			        }
 				} catch( Exception ex ) {
-					ex.printStackTrace();
+					log.log(Level.SEVERE, ex.toString(), ex);
 				}
 			}
 			progress( "record: open("+mgr.dumpFormat(format,info)+")" );
 			spkline.open( format, 1280 );
+	        Mixer.Info infos[] = AudioSystem.getMixerInfo();
+	        for( Mixer.Info mi : infos ) {
+	        	Mixer mix = AudioSystem.getMixer(mi );
+				final int maxLines = mix.getMaxLines(Port.Info.MICROPHONE);
+				if (maxLines > 0) {
+					Port lineIn = (Port) mix.getLine(Port.Info.MICROPHONE);
+					for( Control c : lineIn.getControls() ) {
+						log.info("Found mic control: "+c);
+						if( c instanceof FloatControl ) {
+							mgr.je.setMicGainControl( (FloatControl)c );
+						}
+					}
+//					FloatControl volCtrl = (FloatControl) lineIn.getControl(FloatControl.Type.MASTER_GAIN);
+//					mgr.je.setMicGainControl( volCtrl );
+				}
+	        }
 			
 			progress( "record: start()" );			
 			spkline.start();
@@ -217,13 +282,13 @@ class MicIO implements Runnable {
 	private LinkEventListener registerPttVoxListener() {
 		final LinkEventListener le = new LinkEventListener() {
 			public void processEvent( LinkEvent ev ) {
-				if( ev.getType() != LinkEvent.MICDATA_EVENT ) {
+				if( ev.getType() != LinkMode.MICDATA_EVENT ) {
 					if( log.isLoggable( Level.FINEST ) ) {
 						log.log(Level.FINEST, "vox Link Event: "+
 							ev, new Throwable("LinkEvent: "+ev));
 					}
 				}
-				if( ev.getType() == LinkEvent.VOX_OPEN_EVENT ) {
+				if( ev.getType() == LinkMode.VOX_OPEN_EVENT ) {
 					ptttime = System.currentTimeMillis();
 					pttActive = true;
 					if( prm.getPTTTimeout() > 0 && tsk == null ) {
@@ -238,7 +303,7 @@ class MicIO implements Runnable {
 							}
 						}, prm.getPTTTimeout()*1000 );
 					}
-				} else if( ev.getType() == LinkEvent.VOX_CLOSE_EVENT ) {
+				} else if( ev.getType() == LinkMode.VOX_CLOSE_EVENT ) {
 					long now = System.currentTimeMillis();
 					if( tsk != null && now-ptttime > 
 							(prm.getMinPttDownTime()*1000) ) {
@@ -249,7 +314,7 @@ class MicIO implements Runnable {
 						lel = null;
 						mgr.je.removeLinkEventListener( this );
 					}
-				} else if( ev.getType() != LinkEvent.MICDATA_EVENT ) {
+				} else if( ev.getType() != LinkMode.MICDATA_EVENT ) {
 					if( log.isLoggable( Level.FINEST ) )
 						log.finest("setPttTimer Link Event: "+ev );
 				}
@@ -284,7 +349,7 @@ class MicIO implements Runnable {
 				try {
 					doOutputStream();
 				} catch( Throwable ex ) {
-					ex.printStackTrace();
+					log.log(Level.SEVERE, ex.toString(), ex);
 				}
 			}
 		} finally {
@@ -385,14 +450,14 @@ class MicIO implements Runnable {
 	       					"voice packet, haveNet: "+haveNet );
 	       				mgr.sendPacket( edata, mgr.VOICE_TYPE );
 						LinkEvent le = new LinkEvent( edata,
-							true, LinkEvent.MICDATA_EVENT, edata.length );
+							true, LinkMode.MICDATA_EVENT, edata.length );
 						mgr.je.sendEvent( le );
 	       			} else {
 	       				log.finest("Drop data event for "+
 	       					"voice packet, haveNet: "+haveNet );
 	       			}
 	       		} catch( IOException ex ) {
-	       			ex.printStackTrace();
+					log.log(Level.SEVERE, ex.toString(), ex);
 	       		}
 	       		Thread.yield();
 			}
@@ -550,7 +615,7 @@ class MicIO implements Runnable {
 						log.finer("Audio Sender vox unsquelching "+
 							average+" > "+voxlim );
 						LinkEvent<Number> le = new LinkEvent<Number>( MicIO.this,
-							true, LinkEvent.VOX_OPEN_EVENT, average );
+							true, LinkMode.VOX_OPEN_EVENT, average );
 						mgr.je.sendEvent( le );
 						voxState = true;
 						firstvox = true;
@@ -568,7 +633,7 @@ class MicIO implements Runnable {
 							log.finer("Audio Sender vox squelching "+
 								average+" <= "+voxlim );
 							LinkEvent<Number> le = new LinkEvent<Number>( MicIO.this,
-								true, LinkEvent.VOX_CLOSE_EVENT, average );
+								true, LinkMode.VOX_CLOSE_EVENT, average );
 							mgr.je.sendEvent( le );
 							voxState = false;
 //							firstvox = true;

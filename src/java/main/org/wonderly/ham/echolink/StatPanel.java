@@ -3,12 +3,17 @@ package org.wonderly.ham.echolink;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.wonderly.awt.*;
+import org.wonderly.ham.echolink.LinkEvent.LinkMode;
 import org.wonderly.swing.*;
 
 public class StatPanel extends JPanel {
 	public int rCtlI, rDtI, rSeqI, rMisI;
 	public int sCtlI, sDtI;
+	private static Logger log = Logger.getLogger( StatPanel.class.getName());
 
 	public StatPanel( Font f, Javecho je ) {
 		Packer pk = new Packer( this );
@@ -95,8 +100,16 @@ public class StatPanel extends JPanel {
 			}
 			
 			private void sendEvent( LinkEvent ev ) {
+				if( log.isLoggable(Level.FINE )) {
+				log.fine("StatPanel showing event: "+ev);
+				} else {
+					if( ev.getType() != LinkMode.CONN_EVENT )
+						log.info("StatPanel showing event data for: "+ev.getType());
+					else
+						log.fine("StatPanel showing event data for: "+ev.getType());
+				}
 				switch( ev.getType() ) {
-				case LinkEvent.MICDATA_EVENT:
+				case MICDATA_EVENT:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							sDtI++;
@@ -105,9 +118,9 @@ public class StatPanel extends JPanel {
 						}
 					});
 					break;
-				case LinkEvent.CONN_EVENT:
-				case LinkEvent.DISC_EVENT:
-				case LinkEvent.INFO_EVENT:
+				case CONN_EVENT:
+				case DISC_EVENT:
+				case INFO_EVENT:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							sCtlI++;
@@ -121,7 +134,7 @@ public class StatPanel extends JPanel {
 			
 			private void recvEvent( LinkEvent ev ) {
 				switch( ev.getType() ) {
-				case LinkEvent.NETDATA_EVENT:
+				case NETDATA_EVENT:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							rDtI++;
@@ -130,7 +143,7 @@ public class StatPanel extends JPanel {
 						}
 					});
 					break;
-				case LinkEvent.MISSED_DATA:
+				case MISSED_DATA:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							++rMisI;
@@ -139,7 +152,7 @@ public class StatPanel extends JPanel {
 						}
 					});
 					break;
-				case LinkEvent.OUT_OF_SEQUENCE_DATA:
+				case OUT_OF_SEQUENCE_DATA:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							++rSeqI;
@@ -148,9 +161,9 @@ public class StatPanel extends JPanel {
 						}
 					});
 					break;
-				case LinkEvent.CONN_EVENT:
-				case LinkEvent.DISC_EVENT:
-				case LinkEvent.INFO_EVENT:
+				case CONN_EVENT:
+				case DISC_EVENT:
+				case INFO_EVENT:
 					SwingStuff.runInSwingLater( new Runnable() {
 						public void run() {
 							rCtlI++;

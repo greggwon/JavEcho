@@ -100,7 +100,7 @@ public class ConnectionStatistics
 		if( curSt == null )
 			return;
 		switch( ev.getType() ) {
-		case LinkEvent.MICDATA_EVENT:
+		case MICDATA_EVENT:
 			runInSwing( new Runnable() {
 				public void run() {
 					curSt.sDtI++;
@@ -109,9 +109,9 @@ public class ConnectionStatistics
 				}
 			});
 			break;
-		case LinkEvent.CONN_EVENT:
-		case LinkEvent.DISC_EVENT:
-		case LinkEvent.INFO_EVENT:
+		case CONN_EVENT:
+		case DISC_EVENT:
+		case INFO_EVENT:
 			runInSwing( new Runnable() {
 				public void run() {
 					curSt.sCtlI++;
@@ -125,7 +125,7 @@ public class ConnectionStatistics
 	
 	private void recvEvent( LinkEvent ev ) {
 		switch( ev.getType() ) {
-		case LinkEvent.NETDATA_EVENT:
+		case NETDATA_EVENT:
 			runInSwing( new Runnable() {
 				public void run() {
 					curSt.rDtI++;
@@ -134,7 +134,7 @@ public class ConnectionStatistics
 				}
 			});
 			break;
-		case LinkEvent.MISSED_DATA:
+		case MISSED_DATA:
 			runInSwing( new Runnable() {
 				public void run() {
 					++curSt.rMisI;
@@ -143,7 +143,7 @@ public class ConnectionStatistics
 				}
 			});
 			break;
-		case LinkEvent.OUT_OF_SEQUENCE_DATA:
+		case OUT_OF_SEQUENCE_DATA:
 			runInSwing( new Runnable() {
 				public void run() {
 					++curSt.rSeqI;
@@ -152,9 +152,9 @@ public class ConnectionStatistics
 				}
 			});
 			break;
-		case LinkEvent.CONN_EVENT:
-		case LinkEvent.DISC_EVENT:
-		case LinkEvent.INFO_EVENT:
+		case CONN_EVENT:
+		case DISC_EVENT:
+		case INFO_EVENT:
 			runInSwing( new Runnable() {
 				public void run() {
 					curSt.rCtlI++;

@@ -1,6 +1,5 @@
 package org.wonderly.ham.echolink;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
@@ -8,29 +7,13 @@ import java.util.Arrays;
  *  Javecho system process events for echolink operations
  */
 public class LinkEvent<T> extends java.util.EventObject {
-	int typ;
+	private static final long serialVersionUID = 1L;
+	LinkMode typ;
 	int value;
 	boolean send;
 	T data;
-	public static final int MODE_IDLE            = 0;
-	public static final int MODE_RECEIVE         = 1;
-	public static final int MODE_TRANSMIT        = 2;
-	public static final int MODE_SYSOPRECEIVE    = 3;
-	public static final int MODE_SYSOPTRANSMIT   = 4;
-	public static final int MODE_SYSOPIDLE       = 5;
-
-	public static final int MICDATA_EVENT        = 20;
-	public static final int CONN_EVENT           = 21;
-	public static final int DISC_EVENT           = 22;
-	public static final int INFO_EVENT           = 23;
-	public static final int SDES_EVENT           = 24;
-	public static final int MISSED_DATA          = 25;
-	public static final int OUT_OF_SEQUENCE_DATA = 26;
-	public static final int VOX_OPEN_EVENT       = 27;
-	public static final int VOX_CLOSE_EVENT      = 28;
-	public static final int NETDATA_EVENT        = 29;
-	public static final int STATION_CONN_EVENT   = 30;
-	public static final int STATION_DISC_EVENT   = 31;
+	public static enum LinkMode {MODE_IDLE,MODE_RECEIVE,MODE_TRANSMIT,MODE_SYSOPRECEIVE,MODE_SYSOPTRANSMIT,MODE_SYSOPIDLE,MICDATA_EVENT,
+		CONN_EVENT,DISC_EVENT,INFO_EVENT,SDES_EVENT,MISSED_DATA ,OUT_OF_SEQUENCE_DATA,VOX_OPEN_EVENT ,VOX_CLOSE_EVENT,NETDATA_EVENT,STATION_CONN_EVENT,STATION_DISC_EVENT, NONE }
 
 	private String typeVal() {
 		switch(typ) {
@@ -55,25 +38,34 @@ public class LinkEvent<T> extends java.util.EventObject {
 		Object s = getSource();
 
 		src = s.toString();
+		if( s instanceof byte[] ) {
+			StringBuilder b = new StringBuilder();
+			for( byte c : (byte[])s) {
+				if( c <' ' || c > '~')
+					c = '.';
+				b.append((char)c);
+			}
+			src =b.toString();
+		}
 		
 		return "LinkEvent: src="+src+", send="+send+", type="+typeVal()+", value="+value;
 	}
 
-	public LinkEvent( Object src, boolean send, int type, int val ) {
+	public LinkEvent( Object src, boolean send, LinkMode type, int val ) {
 		super(src);
 		typ = type;
 		value = val;
 		this.send = send;
 	}
 
-	public LinkEvent( Object src, boolean send, int type, T data ) {
+	public LinkEvent( Object src, boolean send, LinkMode type, T data ) {
 		super(src);
 		typ = type;
 		this.data = data;
 		this.send = send;
 	}
 
-	public LinkEvent( Object src, boolean send, int type, int val, T data ) {
+	public LinkEvent( Object src, boolean send, LinkMode type, int val, T data ) {
 		super(src);
 		typ = type;
 		value = val;
@@ -89,7 +81,7 @@ public class LinkEvent<T> extends java.util.EventObject {
 		return send;
 	}
 
-	public int getType() {
+	public LinkMode getType() {
 		return typ;
 	}
 

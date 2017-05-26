@@ -6,6 +6,8 @@ import java.util.*;
 import org.wonderly.swing.*;
 import java.io.*;
 import org.wonderly.awt.*;
+import org.wonderly.ham.echolink.LinkEvent.LinkMode;
+
 import java.util.Timer;
 import javax.swing.*;
 
@@ -304,7 +306,7 @@ class Player implements Runnable {
 		mgr.je.rxActive = false;
 		mgr.je.setAverage(0,0);
 		mgr.setTrans( addr, false );
-		mgr.je.setMode( prm.isUserMode() ? LinkEvent.MODE_IDLE : LinkEvent.MODE_SYSOPIDLE );
+		mgr.je.setMode( prm.isUserMode() ? LinkMode.MODE_IDLE : LinkMode.MODE_SYSOPIDLE );
 
 		if(line != null)
 			line.close();

@@ -3,6 +3,13 @@ package org.wonderly.ham.echolink;
 import java.net.*;
 import java.io.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.wonderly.ham.echolink.LinkEvent.LinkMode;
+
+import sun.rmi.runtime.Log;
+
 import java.text.*;
 
 /**
@@ -30,6 +37,7 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 	private boolean trans;
 	private boolean discPend;
 	private MulticastSocket multi;
+	private static final Logger log = Logger.getLogger( Connection.class.getName() );
 
 	public void setMulticastSocket( MulticastSocket sock ) {
 		multi = sock;
@@ -116,23 +124,23 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 	}
 	public void sendChat( byte[]arr ) throws IOException {
 		mgr.ep.sendChatData( arr, voiceAddr );
-		LinkEvent le = new LinkEvent( arr, true, LinkEvent.INFO_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<Number>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	public void sendInfo( byte[]arr ) throws IOException {
 		mgr.ep.sendData( arr, voiceAddr );
-		LinkEvent le = new LinkEvent( arr, true, LinkEvent.INFO_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<Number>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendConnData() throws IOException {
 //			new Throwable("Send connData").printStackTrace();
 		mgr.ep.sendData( sdesPacket, statusAddr );
-		LinkEvent le = new LinkEvent( sdesPacket, true, LinkEvent.CONN_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<Number>( sdesPacket, true, LinkMode.CONN_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendByeData() throws IOException {
 		mgr.ep.sendData( byePacket, statusAddr );
-		LinkEvent le = new LinkEvent( addr, true, LinkEvent.DISC_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<Number>( addr, true, LinkMode.DISC_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendVoiceData( byte[]data ) throws IOException {
@@ -164,8 +172,8 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 					cancel();
 					return;
 				}
-			} catch( Exception ex ) {
-				ex.printStackTrace();
+			} catch(Exception ex ) {
+				log.log(Level.SEVERE, ex.toString(), ex);
 			}
 		}
 		sendSdesPacket();
@@ -179,7 +187,7 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 			try {
 				mgr.shutdownStream( this );
 			} catch( Exception exx ) {
-				exx.printStackTrace();
+				log.log(Level.SEVERE, exx.toString(), exx);
 			}
 			cancel();
 		}

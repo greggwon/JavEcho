@@ -8,6 +8,7 @@ import java.awt.event.*;
 import java.util.logging.*;
 
 import org.wonderly.awt.*;
+import org.wonderly.ham.echolink.LinkEvent.LinkMode;
 
 /**
  *  Audio level display component
@@ -25,11 +26,11 @@ public class AudioLevel extends JPanel {
 		log.info("Vox receive: "+how );
 		try {
 			if(how) {
-				je.setMode(LinkEvent.MODE_SYSOPRECEIVE);
+				je.setMode(LinkMode.MODE_SYSOPRECEIVE);
 				if( je.ssa != null ) je.ssa.voxTransmit();
 			} else {
 				if( je.ssa != null ) je.ssa.receive();
-				je.setMode(LinkEvent.MODE_SYSOPIDLE);
+				je.setMode(LinkMode.MODE_SYSOPIDLE);
 			}
 		} catch( Exception ex ) {
 			log.log( Level.SEVERE, ex.toString(), ex );
