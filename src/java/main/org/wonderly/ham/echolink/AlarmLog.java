@@ -1,6 +1,8 @@
 package org.wonderly.ham.echolink;
 
 import java.util.*;
+import java.util.List;
+
 import javax.swing.*;
 import javax.swing.event.*;
 import org.wonderly.awt.*;
@@ -9,25 +11,25 @@ import java.awt.event.*;
 import java.awt.*;
 
 public class AlarmLog extends JDialog {
-	Vector<StationData> hist;
+	List<StationData> hist;
 	JList list;
 	JFrame par;
 	Javecho je;
 
-	public Vector getHistory() {
+	public List<StationData> getHistory() {
 		return hist;
 	}
 	
-	public void setHistory( Vector<StationData> v ) {
+	public void setHistory( List<StationData> v ) {
 		hist = v;
-		list.setListData(hist);
+		list.setListData(hist.toArray());
 	}
 	
 	public void addEntry( StationData call ) {
 		if( hist.contains(call) )
-			hist.removeElement(call);
-		hist.addElement( call );
-		list.setListData( hist );
+			hist.remove(call);
+		hist.add( call );
+		list.setListData( hist.toArray() );
 		if( isVisible() ) {
 			SwingUtilities.invokeLater( new Runnable() {
 				public void run() {
@@ -58,7 +60,7 @@ public class AlarmLog extends JDialog {
 		hist = new Vector<StationData>();
 		Packer pk = new Packer( getContentPane() );
 		list = new JList( );
-		list.setListData( hist );
+		list.setListData( hist.toArray() );
 		pk.pack( new JScrollPane( list ) ).gridx(0).gridy(0).fillboth().inset(4,4,4,4);
 //		list.addListSelectionListener( new ListSelectionListener() {
 //			public void valueChanged( ListSelectionEvent ev ) {

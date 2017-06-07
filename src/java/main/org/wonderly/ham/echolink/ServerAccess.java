@@ -34,7 +34,7 @@ public class ServerAccess {
 	private Vector<Entry> listHead;
 	private volatile boolean switchServer = true;
 
-	public Vector<Entry> getList(Vector<String> servers, String use, String[] sites, Socket last) throws IOException {
+	public Vector<Entry> getList(List<String> servers, String use, String[] sites, Socket last) throws IOException {
 		if (use != null) {
 			site = use;
 			sites[0] = site;
@@ -43,7 +43,7 @@ public class ServerAccess {
 		}
 
 		if (servers != null && switchServer == true) {
-			site = servers.elementAt((int) (Math.random() * servers.size()));
+			site = servers.get((int) (Math.random() * servers.size()));
 			log.info("Starting with random site: " + site);
 			sites[0] = site;
 		}

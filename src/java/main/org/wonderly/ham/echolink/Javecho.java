@@ -594,7 +594,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				ObjectInputStream is = new ObjectInputStream(fi);
 				try {
 					int ver = ((Integer) is.readObject()).intValue(); // version
-					final Vector<Entry> friendData = new VectorReader<Entry>().read(is);
+					final List<Entry> friendData = new VectorReader<Entry>().read(is);
 					Collections.sort(friendData, new EntryComparator());
 					runInSwing(new Runnable() {
 						public void run() {
@@ -602,19 +602,19 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						}
 					});
 					if (ver > 1) {
-						Vector<HistoryEntry> v = new VectorReader<HistoryEntry>().read(is);
+						List<HistoryEntry> v = new VectorReader<HistoryEntry>().read(is);
 						qsoHist.setHistory(v);
 						qsoHist.setLocation((Point) is.readObject());
 						qsoHist.setSize((Dimension) is.readObject());
 						if (ver <= 4) {
-							Vector<StationData> sv = new VectorReader<StationData>().read(is);
+							List<StationData> sv = new VectorReader<StationData>().read(is);
 							alarmMgr.almLog.setHistory(sv);
 						}
 						alarmMgr.almLog.setLocation((Point) is.readObject());
 						alarmMgr.almLog.setSize((Dimension) is.readObject());
 					}
 					if (ver > 2) {
-						Vector<String> v = new VectorReader<String>().read(is);
+						List<String> v = new VectorReader<String>().read(is);
 						alarmMgr.almEd.setHistory(v);
 					}
 					if (ver > 3) {
@@ -1740,6 +1740,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						if (friendData.contains(e) == false) {
 							frmod.addData(e);
 						}
+						saveFavorites();
 					}
 				});
 				if (nd == null)
@@ -3106,7 +3107,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		int trycnt = 0;
 		while (!connected && !cancelled[0] && badhost) {
 			for (int i = 0; !connected && !cancelled[0] && i < pr.servers.size(); ++i) {
-				s = (String) pr.servers.elementAt(i);
+				s = (String) pr.servers.get(i);
 				progress("Trying (host['" + i + "' of '" + pr.servers.size() + "']=" + badhost + "): " + s);
 				final String fs = s;
 				SwingUtilities.invokeLater(new Runnable() {
@@ -4073,7 +4074,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 								return null;
 							}
 						}
-						curhost = s = (String) pr.servers.elementAt(idx);
+						curhost = s = (String) pr.servers.get(idx);
 						progress("try logon to " + s);
 						log.info("Trying login to: " + s);
 						l.setText("Trying Server: " + s);
@@ -4110,7 +4111,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 					log.info("Got connected to: " + s + ", sock: " + logonSock);
 					l.setText("Requesting Station List...");
-					Vector<Entry> v = acc.getList(pr.servers, s, ret, logonSock);
+					List<Entry> v = acc.getList(pr.servers, s, ret, logonSock);
 					site = ret[0];
 					if (v != null)
 						trmod.setData(staList = v);
@@ -5371,7 +5372,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					NodeList rl = null;
 					if (r >= 0 && r < rlv.size()) {
 						log.log(Level.FINE, "rlv has {0} items, getting {1}", new Object[] { rlv.size(), r });
-						rlv.get(r);
+						rl = rlv.get(r);
 					}
 					if (rl == null) {
 						rl = new NodeList("Region " + r, new ArrayList<Object>());

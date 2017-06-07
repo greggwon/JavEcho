@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 import java.util.*;
+import java.util.List;
+
 import javax.sound.sampled.*;
 import org.wonderly.swing.*;
 
@@ -78,8 +80,8 @@ public class SetupDialog extends JDialog {
 		setLocationRelativeTo( je );
 		setVisible(true);
 		if( cancelled[0] == false ) {
-			Vector v = prm.getServerList();
-			prm.getServers().removeAllElements();
+			java.util.List<String> v = prm.getServerList();
+			prm.getServers().clear();
 			for( int i = 0; i < srvbx.length; ++i ) {
 				int idx = srvbx[i].getSelectedIndex();
 				if( idx >= v.size() ) {
@@ -354,19 +356,17 @@ public class SetupDialog extends JDialog {
 		JPanel p = new JPanel();
 		Packer pk = new Packer(p);
 
-		final Vector<String> lv = prm.getServerList();
-		Vector<String> sv = prm.getServers();
-		Vector<String> v = new Vector<String>();
-		for( int i = 0; i < lv.size(); ++i ) {
-			v.addElement( lv.elementAt(i) );
-		}
-		v.addElement("[none]");
+		final List<String> lv = prm.getServerList();
+		List<String> sv = prm.getServers();
+		List<String> v = new ArrayList<String>();
+		v.addAll(lv);
+		v.add("[none]");
 		int y = -1;
 		final JComboBox bx[] = new JComboBox[lv.size()];
 		srvbx = bx;
 		for( int i = 0; i < lv.size(); ++i ) {
 			pk.pack( new JLabel( "Pref "+(i+1)+":" ) ).gridx(0).gridy(++y).west();
-			bx[i] = new JComboBox( v );
+			bx[i] = new JComboBox( new ListListModel<String>(v) );
 			String s = prm.getServerN(i);
 			if( s != null )
 				bx[i].setSelectedItem( s );
@@ -388,7 +388,7 @@ public class SetupDialog extends JDialog {
 					JOptionPane.QUESTION_MESSAGE );
 				if( c == JOptionPane.YES_OPTION ) {
 					for( int i = 0; i < bx.length; ++i ) {
-						bx[i].setSelectedItem( lv.elementAt(i) );
+						bx[i].setSelectedItem( lv.get(i) );
 						bx[i].repaint();
 					}
 				}

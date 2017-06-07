@@ -8,10 +8,10 @@ import java.util.prefs.*;
 import java.util.logging.*;
 
 public class Parameters {
-	Vector<String> serverList;
+	List<String> serverList;
 	volatile String file;
 //	String site = "";
-	Vector<String> servers;
+	List<String> servers;
 	volatile int netbuffs = 5;
 	volatile int pcbuffs = 5;
 	volatile int retryTimeout = 10;
@@ -25,7 +25,7 @@ public class Parameters {
 	volatile boolean fulldup;
 	volatile boolean allowMulti;
 	volatile int audio = 0;
-	Vector<CountryAccess.CountryEntry> deniedCountries;
+	List<CountryAccess.CountryEntry> deniedCountries;
 	volatile int listUpdIntv = 300;
 	volatile int loginIntv = 360;
 	volatile boolean stationListAutoUpdate = true;
@@ -44,7 +44,7 @@ public class Parameters {
 	volatile boolean freeInList = true;
 	volatile boolean busyInList = true; 
 	volatile boolean alarmedOnlyInList;
-	Vector<String> deniedCallsList;
+	List<String> deniedCallsList;
 	volatile boolean allowConfs;
 	volatile int confCount = 1;
 	volatile boolean updLocEntryWithStatus;
@@ -360,7 +360,7 @@ public class Parameters {
 	public void setAlarmedStationsOnlyInList( boolean how ) {
 		alarmedOnlyInList = how;
 	}
-	public Vector<String> getDeniedCallsList() {
+	public List<String> getDeniedCallsList() {
 		return deniedCallsList;
 	}
 	public void setDeniedCallsList( Vector<String> list ) {
@@ -491,11 +491,11 @@ public class Parameters {
 		userMode = how;
 	}
 	
-	public Vector<CountryAccess.CountryEntry> getDeniedCountries() {
+	public List<CountryAccess.CountryEntry> getDeniedCountries() {
 		return deniedCountries;
 	}
 	
-	public void setDeniedCountries( Vector<CountryAccess.CountryEntry> v ) {
+	public void setDeniedCountries( List<CountryAccess.CountryEntry> v ) {
 		deniedCountries = v;
 	}
 
@@ -815,9 +815,9 @@ public class Parameters {
 					BufferedReader br = new BufferedReader( rd );
 					try {
 						String s;
-						serverList = new Vector<String>();
+						serverList = new ArrayList<String>();
 						while( ( s = br.readLine() ) != null )
-							serverList.addElement( s );
+							serverList.add( s );
 					} finally {
 						br.close();
 					}
@@ -825,19 +825,19 @@ public class Parameters {
 					rd.close();
 				}
 			} catch( FileNotFoundException ex ) {
-				serverList = new Vector<String>();
-				serverList.addElement( "nasouth.echolink.org" );
-				serverList.addElement( "naeast.echolink.org" );
-				serverList.addElement( "servers.echolink.org" );
-				serverList.addElement( "backup.echolink.org" );
-				serverList.addElement( "localhost" );
+				serverList = new ArrayList<String>();
+				serverList.add( "nasouth.echolink.org" );
+				serverList.add( "naeast.echolink.org" );
+				serverList.add( "servers.echolink.org" );
+				serverList.add( "backup.echolink.org" );
+				serverList.add( "localhost" );
 				if( servers.size() == 0 ) {
-//				servers.removeAllElements();
-				servers.addElement( "nasouth.echolink.org" );
-				servers.addElement( "naeast.echolink.org" );
-				servers.addElement( "servers.echolink.org" );
-				servers.addElement( "backup.echolink.org" );
-				servers.addElement( "localhost" );
+//					servers.removeAllElements();
+					servers.add( "nasouth.echolink.org" );
+					servers.add( "naeast.echolink.org" );
+					servers.add( "servers.echolink.org" );
+					servers.add( "backup.echolink.org" );
+					servers.add( "localhost" );
 				}
 			}
 //			servers.removeAllElements();
@@ -867,7 +867,7 @@ public class Parameters {
 		}
 	}
 
-	public Vector<String> getServers() {
+	public List<String> getServers() {
 		return servers;
 	}
 
@@ -882,7 +882,7 @@ public class Parameters {
 	/**
 	 *  List of all available servers
 	 */
-	public Vector<String> getServerList() {
+	public List<String> getServerList() {
 		return serverList;
 	}
 
@@ -895,20 +895,20 @@ public class Parameters {
 	}
 
 	public void setServerN( int n, String srv ) {
-		if( n >= servers.size() )
-			servers.setSize(n+1);
-		servers.setElementAt(srv,n);
+		while( n >= servers.size() )
+			servers.add(null);
+		servers.set(n,srv);
 	}
 
 	public String getServerN( int n ) {
 		if( n >= servers.size() )
 			return null;
-		return (String)servers.elementAt(n);
+		return (String)servers.get(n);
 	}
 
 	public void addServer( String srv ) {
 		if( servers.contains( srv ) == false )
-			servers.addElement( srv );
+			servers.add( srv );
 	}
 
 	public String getPassword() {

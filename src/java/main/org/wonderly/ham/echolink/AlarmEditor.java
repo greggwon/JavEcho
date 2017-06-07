@@ -1,6 +1,8 @@
 package org.wonderly.ham.echolink;
 
 import java.util.*;
+import java.util.List;
+
 import javax.swing.*;
 import org.wonderly.awt.*;
 import java.awt.event.*;
@@ -8,7 +10,7 @@ import javax.swing.event.*;
 import java.awt.*;
 
 public class AlarmEditor extends JDialog {
-	Vector<String> hist;
+	List<String> hist;
 	JList list;
 	JFrame par;
 	boolean dirty;
@@ -28,20 +30,20 @@ public class AlarmEditor extends JDialog {
 		return super.getSize();
 	}
 
-	public Vector getHistory() {
+	public List<String> getHistory() {
 		return hist;
 	}
 
-	public void setHistory( Vector<String> v ) {
+	public void setHistory( List<String> v ) {
 		hist = v;
-		list.setListData(hist);
+		list.setListData(hist.toArray());
 	}
 	
 	public void addEntry( String call ) {
 		if( hist.contains(call) )
-			hist.removeElement(call);
-		hist.addElement( call );
-		list.setListData( hist );
+			hist.remove(call);
+		hist.add( call );
+		list.setListData( hist.toArray() );
 		if( isVisible() ) {
 			SwingUtilities.invokeLater( new Runnable() {
 				public void run() {
@@ -63,7 +65,7 @@ public class AlarmEditor extends JDialog {
 		hist = new Vector<String>();
 		Packer pk = new Packer( getContentPane() );
 		list = new JList( );
-		list.setListData( hist );
+		list.setListData( hist.toArray() );
 		JTextArea msg = new JTextArea( 
 			"Alarm if any of the following stations "+
 			"come online or change status:");
@@ -104,15 +106,15 @@ public class AlarmEditor extends JDialog {
 				String str = JOptionPane.showInputDialog( par, "Call Sign?" );
 				if( str == null )
 					return;
-				hist.addElement(str);
-				list.setListData(hist);
+				hist.add(str);
+				list.setListData(hist.toArray());
 				dirty = true;
 			}
 		});
 		remove.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
-				hist.removeElementAt( list.getSelectedIndex() );
-				list.setListData( hist );
+				hist.remove( list.getSelectedIndex() );
+				list.setListData( hist.toArray() );
 				dirty = true;
 			}
 		});
@@ -123,7 +125,7 @@ public class AlarmEditor extends JDialog {
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE );
 				if( idx == JOptionPane.CANCEL_OPTION )
 					return;
-				list.setListData( hist = new Vector<String>() );
+				list.setListData( new String[]{} );
 				dirty = true;
 			}
 		});

@@ -5,9 +5,9 @@ import java.io.*;
 import org.wonderly.util.*;
 
 public class VectorReader<T> {	
-	public @SuppressWarnings("unchecked") Vector<T> read(ObjectInputStream is) 
+	public @SuppressWarnings("unchecked") List<T> read(ObjectInputStream is) 
 			throws IOException, ClassNotFoundException {
-		Vector<T> iv = new Cast<Vector<T>>(is.readObject()).get();
+		List<T> iv = new Cast<List<T>>(is.readObject()).get();
 		return iv;		
 	}
 }

@@ -4,6 +4,7 @@ import javax.swing.*;
 import org.wonderly.awt.*;
 import org.wonderly.swing.*;
 import java.awt.*;
+import java.awt.List;
 import java.awt.event.*;
 import javax.swing.event.*;
 import java.util.*;
@@ -511,10 +512,10 @@ public class PreferencesDialog extends JDialog {
 	JRadioButton denyCalls;
 	Vector<String> deniedCallsList;
 	JList deniedCalls;
-	JList allCountries;
-	JList deniedCountries;
-	Vector<CountryAccess.CountryEntry> allCountriesList;
-	Vector<CountryAccess.CountryEntry> deniedCountriesList;
+	JList<CountryAccess.CountryEntry> allCountries;
+	JList<CountryAccess.CountryEntry> deniedCountries;
+	java.util.List<CountryAccess.CountryEntry> allCountriesList;
+	java.util.List<CountryAccess.CountryEntry> deniedCountriesList;
 	private JPanel buildSecurity() {
 		JPanel p = new JPanel();
 		Packer pk = new Packer(p);
@@ -617,15 +618,15 @@ public class PreferencesDialog extends JDialog {
 		pk.pack( ip ).gridx(0).gridy(++y).gridw(2).fillboth();
 		ipk.pack( new JLabel("Accept") ).gridx(0).gridy(0).west();
 		ipk.pack( new JLabel("Deny") ).gridx(2).gridy(0).west();
-		Vector<CountryAccess.CountryEntry> v = CountryAccess.getCountries();
+		java.util.List<CountryAccess.CountryEntry> v = CountryAccess.getCountries();
 		Collections.sort(v);
 		deniedCountriesList = prm.getDeniedCountries();
 		for( int i = 0; i < deniedCountriesList.size(); ++i ) {
-			v.removeElement( CountryAccess.entryFor( 
-				deniedCountriesList.elementAt(i).name ) );
+			v.remove( CountryAccess.entryFor( 
+				deniedCountriesList.get(i).name ) );
 		}
 		ipk.pack( new JScrollPane( 
-			allCountries = new JList( allCountriesList = v ) ) 
+			allCountries = new JList<CountryAccess.CountryEntry>( new ListListModel<CountryAccess.CountryEntry>( allCountriesList = v) ) ) 
 			).gridx(0).gridy(1).gridh(4).fillboth();
 
 		ipk.pack( new JPanel() ).gridx(1).gridy(1).filly();
@@ -638,16 +639,16 @@ public class PreferencesDialog extends JDialog {
 		ipk.pack( rmvc ).gridx(1).gridy(3).inset(0,10,0,10);
 		ipk.pack( new JPanel() ).gridx(1).gridy(4).filly();
 		ipk.pack( new JScrollPane( 
-				deniedCountries = new JList(deniedCountriesList) 
+				deniedCountries = new JList<CountryAccess.CountryEntry>(new ListListModel<CountryAccess.CountryEntry>(deniedCountriesList)) 
 			) ).gridx(2).gridy(1).gridh(4).fillboth();
 		add.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
 				int idx = allCountries.getSelectedIndex();
 				if( idx == -1 )
 					return;
-				deniedCountriesList.addElement(
-					allCountriesList.elementAt( idx ) );
-				allCountriesList.removeElementAt( idx );
+				deniedCountriesList.add(
+					allCountriesList.get( idx ) );
+				allCountriesList.remove( idx );
 				allCountries.clearSelection();
 			}
 		});
@@ -656,9 +657,9 @@ public class PreferencesDialog extends JDialog {
 				int idx = deniedCountries.getSelectedIndex();
 				if( idx == -1 )
 					return;
-				allCountriesList.addElement(
-					deniedCountriesList.elementAt( idx ) );
-				deniedCountriesList.removeElementAt( idx );
+				allCountriesList.add(
+					deniedCountriesList.get( idx ) );
+				deniedCountriesList.remove( idx );
 				deniedCountries.clearSelection();
 			}
 		});
