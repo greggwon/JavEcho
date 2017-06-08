@@ -250,9 +250,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * The lines of text returned from the connection event by the echolink
 	 * servers
 	 */
-	private List<Entry> sysmsg;
+	private List<Entry> sysmsg = new Vector<Entry>();
 	/** Implementation of audio tones for event notification */
-	private AudioProvider audio;
+	AudioProvider audio;
 	private java.util.Timer timer = new java.util.Timer();
 	private URL currentURL;
 	/** List of stations we have contacted */
@@ -286,6 +286,16 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	private JLabel rcvSerialCD, rcvSerialDSR, rcvSerialCTS;
 	// private volatile int sDtI, sCtlI, rDtI, rMisI, rSeqI, rCtlI;
 	private JLabel sDt, sCtl, rDt, rMis, rSeq, rCtl;
+
+	LinkMode lastmode = LinkMode.NONE;
+	TimerTask txcnt;
+	long txtime;
+	private DragGestureRecognizer fdgr;
+	private DragGestureRecognizer sdgr;
+	private DropTarget dt;
+	private DragGestureRecognizer flgr;
+	private JSlider micGainSlider;
+	private ControlRangeModel mcrm;
 
 	/**
 	 * Get the ServerAccess instance that is active
@@ -772,9 +782,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Get access to the passed comm port
 	 */
 	private CommPortIdentifier getCommPort(String port) {
-		Enumeration e = CommPortIdentifier.getPortIdentifiers();
+		Enumeration<CommPortIdentifier> e =  (Enumeration<CommPortIdentifier>) CommPortIdentifier.getPortIdentifiers();
 		while (e.hasMoreElements()) {
-			CommPortIdentifier p = (CommPortIdentifier) e.nextElement();
+			CommPortIdentifier p = e.nextElement();
 			if (p.getName().equals(port)) {
 				if (p.getPortType() != CommPortIdentifier.PORT_SERIAL)
 					throw new IllegalArgumentException(port + ": must specified serial port");
@@ -885,16 +895,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			// }
 		}
 	}
-
-	LinkMode lastmode = LinkMode.NONE;
-	TimerTask txcnt;
-	long txtime;
-	private DragGestureRecognizer fdgr;
-	private DragGestureRecognizer sdgr;
-	private DropTarget dt;
-	private DragGestureRecognizer flgr;
-	private JSlider micGainSlider;
-	private ControlRangeModel mcrm;
 
 	/**
 	 * get the mode description string associated with the passed integer state.
@@ -1545,8 +1545,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		frList = new Vector<Entry>();
 
 		locmod = new MyLocModel(staList, false);
-		trmod = new MyModel(staList, "All Stations", false);
-		frmod = new MyModel(frList, "Favorites", false);
+		if( alarmMgr == null || sysmsg == null ) {
+			JOptionPane.showMessageDialog( this,  "AlarmManager instance is not initialized yet");
+		}
+		trmod = new MyModel(staList, "All Stations", alarmMgr, sysmsg, false);
+		frmod = new MyModel(frList, "Favorites", alarmMgr, sysmsg, false);
 
 		locations = new JTree(locmod);
 		favorites = new JTree(frmod);
@@ -4045,13 +4048,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			comps = new Component[] { stations, favorites, stinfo };
 		else
 			comps = new Component[] { stations, favorites, stinfo, stsumm };
-		sysmsg = new Vector<Entry>();
+		sysmsg.clear();
 
-		final JDialog dlg = new JDialog(this, "Loading Station List", false);
+		final JDialog dlg = new JDialog(this, "Loading Station List", wait);
 		Packer pk = new Packer(dlg.getContentPane());
 		final JLabel l = new JLabel("Connection to Server for Station List");
 		l.setFont(new Font("serif", Font.PLAIN, 18));
 		pk.pack(l).gridx(0).gridy(0).fillboth().inset(10, 10, 10, 10);
+		dlg.pack();
+		dlg.setLocationRelativeTo(stations);
 
 		new ComponentUpdateThread(comps) {
 
@@ -4152,6 +4157,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 								locations.repaint();
 								favorites.repaint();
 								stations.repaint();
+								stations.paintImmediately(stations.bounds());
+								favorites.paintImmediately(stations.bounds());
+								locations.paintImmediately(stations.bounds());
 								if (stsumm != null)
 									stsumm.refresh();
 							}
@@ -4824,352 +4832,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		return info;
 	}
 
-	static class NamedList<T> extends ArrayList<T> {
-		private static final long serialVersionUID = 1L;
-		String name;
-
-		public NamedList(String name) {
-			this.name = name;
-		}
-
-		public String toString() {
-			return name;
-		}
-
-		public int hashCode() {
-			return name.hashCode();
-		}
-	}
-
-	static class AlarmManager {
-		private boolean almOnce = false;
-		private boolean firstAlm = true;
-		Logger log = Logger.getLogger(Javecho.class.getName());
-		Javecho je;
-
-		public AlarmManager(Javecho j) {
-			je = j;
-		}
-
-		AlarmEditor almEd;
-
-		void showAlarmEditor() {
-			almEd.showFrame();
-		}
-
-		AlarmLog almLog;
-
-		void showAlarmLog() {
-			almLog.showFrame();
-		}
-
-		public void checkAlarms(StationData dt) {
-			if (almOnce || firstAlm)
-				return;
-			log.finer("Check for alarm of " + dt);
-			log.finest("alarms for: " + almEd.getHistory());
-			if (almEd.getHistory().contains(dt.getCall()) == false) {
-				log.finer("No alarm entry for: " + dt.getCall());
-				return;
-			}
-			almOnce = true;
-			log.finer("Adding status for: " + dt);
-			almLog.addEntry(dt);
-			try {
-				log.fine("Sounding Alarm for: " + dt);
-				je.audio.alarm();
-				if (almLog.isVisible() == false) {
-					almLog.setVisible(true);
-				}
-			} catch (Exception ex) {
-				log.log(Level.WARNING, ex.toString(), ex);
-			}
-		}
-	}
-
 	AlarmManager alarmMgr = new AlarmManager(Javecho.this);
-
-	private class MyModel implements TreeModel {
-		volatile List<Entry> data;
-		volatile String root;
-		NamedList<NamedList> nodes = new NamedList<NamedList>("Loading...");
-		List<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
-		String name;
-		volatile boolean dbg = true;
-		NamedList<Entry> stations;
-		NamedList<Entry> links;
-		NamedList<Entry> repeat;
-		NamedList<Entry> conf;
-		// NamedList<Entry> msg;
-
-		public Entry findStation(String call) {
-			for (int i = 0; i < data.size(); ++i) {
-				Entry e = data.get(i);
-				if (e.getStation().getCall().equals(call))
-					return e;
-			}
-			return null;
-		}
-
-		public List<Entry> getContents() {
-			return data;
-		}
-
-		public String toString() {
-			return name;
-		}
-
-		public MyModel(List<Entry> v, String name, boolean debug) {
-			this.name = name;
-			root = name;
-			dbg = debug;
-			setData(v);
-		}
-
-		public void setData(List<Entry> v) {
-			data = new ArrayList<Entry>();
-			fillData(v);
-			updateAll();
-		}
-
-		public int getChildCount(Object node) {
-			if (dbg)
-				progress(this + ": getChildCount(" + node + ")");
-			if (node == root) {
-				if (dbg)
-					progress(this + ":" + nodes + ": size=" + nodes.size());
-				return nodes.size();
-			}
-			if (node instanceof NamedList == false)
-				return 0;
-			NamedList v = (NamedList) node;
-			if (dbg)
-				progress(this + ": " + v + ": size=" + v.size());
-			return v.size();
-		}
-
-		public boolean isLeaf(Object node) {
-			if (dbg)
-				progress(this + ": [" + node + "] is leaf? " + (node instanceof Entry));
-			return node instanceof Entry;
-		}
-
-		public int getIndexOfChild(Object parent, Object node) {
-			if (dbg)
-				progress(this + ": getIndexOfChild(" + parent + "," + node + ")");
-			int idx = nodes.indexOf(parent);
-			if (parent == root) {
-				if (dbg)
-					progress(parent + ": index of " + node + " = " + idx);
-				return idx;
-			}
-			if (idx == -1) {
-				if (dbg)
-					progress(parent + " OOOOPPPPSSSS at " + node + ", no child index");
-				return -1;
-			}
-			NamedList v = nodes.get(idx);
-			if (dbg)
-				progress(parent + ": index of " + node + " = " + v.indexOf(node));
-			return v.indexOf(node);
-		}
-
-		public void addTreeModelListener(TreeModelListener lis) {
-			if (dbg)
-				progress(this + ": addTreeModelListener(" + lis + ")");
-			listeners.add(lis);
-			TreeModelEvent ev = new TreeModelEvent(this, new Object[] { root });
-			lis.treeStructureChanged(ev);
-			lis.treeNodesChanged(ev);
-		}
-
-		public void removeTreeModelListener(TreeModelListener lis) {
-			if (dbg)
-				progress(this + ": removeTreeModelListener(" + lis + ")");
-			listeners.remove(lis);
-		}
-
-		public void valueForPathChanged(TreePath path, Object value) {
-			if (dbg)
-				progress(this + ": valueForPathChanged(" + path + "," + value + ")");
-		}
-
-		public synchronized Object getChild(Object parent, int idx) {
-			if (dbg)
-				progress(this + ": getChild(" + parent + "," + idx + ")");
-			if (parent == root) {
-				if (dbg)
-					progress(parent + ": child at " + idx + " = " + nodes.get(idx));
-				return nodes.get(idx);
-			}
-			NamedList v = (NamedList) parent;
-			if (dbg)
-				progress(parent + ": child at " + idx + " = " + v.get(idx));
-			return v.get(idx);
-		}
-
-		public synchronized Object getRoot() {
-			return root;
-		}
-
-		void fillData(List<Entry> v) {
-			if (stations == null)
-				stations = new NamedList<Entry>("Stations");
-			else
-				stations.clear();
-			if (links == null)
-				links = new NamedList<Entry>("Links");
-			else
-				links.clear();
-			if (repeat == null)
-				repeat = new NamedList<Entry>("Repeaters");
-			else
-				repeat.clear();
-			if (conf == null)
-				conf = new NamedList<Entry>("Conferences");
-			else
-				conf.clear();
-			nodes = new NamedList<NamedList>("nodes");
-			if (name.equals("Favorites") == true || pr.isRepeatersInStationList())
-				nodes.add(repeat);
-			if (name.equals("Favorites") == true || pr.isLinksInStationList())
-				nodes.add(links);
-			if (name.equals("Favorites") == true || pr.isUsersInStationList())
-				nodes.add(stations);
-			if (name.equals("Favorites") == true || pr.isConferencesInStationList())
-				nodes.add(conf);
-			addData(v);
-			Comparator<Entry> e = new EntryComparator();
-			if (name.equals("Favorites") == true || pr.isRepeatersInStationList())
-				Collections.sort(repeat, e);
-			if (name.equals("Favorites") == true || pr.isLinksInStationList())
-				Collections.sort(links, e);
-			if (name.equals("Favorites") == true || pr.isUsersInStationList())
-				Collections.sort(stations, e);
-			if (name.equals("Favorites") == true || pr.isConferencesInStationList())
-				Collections.sort(conf, e);
-		}
-
-		private void addData(List<Entry> v) {
-			alarmMgr.almOnce = false;
-			for (int i = 0; i < v.size(); ++i) {
-				Entry e = v.get(i);
-				addData(e, false);
-			}
-			alarmMgr.firstAlm = false;
-		}
-
-		void updateAll() {
-			updatePath(new TreePath(new Object[] { root, stations }));
-			updatePath(new TreePath(new Object[] { root, links }));
-			updatePath(new TreePath(new Object[] { root, repeat }));
-			updatePath(new TreePath(new Object[] { root, conf }));
-		}
-
-		void updatePath(TreePath pth) {
-			TreeModelEvent ev = new TreeModelEvent(this, pth);
-			for (int i = 0; i < listeners.size(); ++i) {
-				TreeModelListener lis = (TreeModelListener) listeners.get(i);
-				lis.treeStructureChanged(ev);
-				lis.treeNodesChanged(ev);
-			}
-		}
-
-		void deletedPath(TreePath pth) {
-			TreeModelEvent ev = new TreeModelEvent(this, pth);
-			for (int i = 0; i < listeners.size(); ++i) {
-				TreeModelListener lis = (TreeModelListener) listeners.get(i);
-				lis.treeNodesRemoved(ev);
-			}
-		}
-
-		public void addData(Entry e) {
-			addData(e, true);
-		}
-
-		private void addData(Entry e, boolean update) {
-			if (data.contains(e) == true) {
-				// if ( pr.isBeeping() ) {
-				// Toolkit.getDefaultToolkit().beep();
-				// } else
-				if (e.getStation().getCall().trim().length() > 0) {
-					progress(e.getStation().getCall() + " already in list " + "Station Not Added");
-				}
-				return;
-			}
-			if (e.getType() != Entry.TYPE_MSG) {
-				if (e.getStation().disconnected())
-					alarmMgr.checkAlarms(e.getStation());
-				else if (e.getStation().connected())
-					alarmMgr.checkAlarms(e.getStation());
-				else if (e.getStation().wentIdle())
-					alarmMgr.checkAlarms(e.getStation());
-				else if (e.getStation().wentBusy())
-					alarmMgr.checkAlarms(e.getStation());
-			}
-			boolean add = false;
-			if (pr.isConferencesInStationList() && e.getType() == Entry.TYPE_CONF) {
-				add = true;
-			} else if (pr.isUsersInStationList() && e.getType() == Entry.TYPE_STATION) {
-				add = true;
-			} else if (pr.isLinksInStationList() && e.getType() == Entry.TYPE_LINK) {
-				add = true;
-			} else if (pr.isRepeatersInStationList() && e.getType() == Entry.TYPE_REPEATER) {
-				add = true;
-			} else if (e.getType() == Entry.TYPE_MSG) {
-				add = true;
-			}
-			if (name.equals("Favorites") == false && !add)
-				return;
-			data.add(e);
-			if (update)
-				Collections.sort(data, new EntryComparator());
-			NamedList<Entry> w = null;
-			if (e.getType() == Entry.TYPE_LINK)
-				w = links;
-			else if (e.getType() == Entry.TYPE_REPEATER)
-				w = repeat;
-			else if (e.getType() == Entry.TYPE_STATION)
-				w = stations;
-			else if (e.getType() == Entry.TYPE_CONF)
-				w = conf;
-			else if (e.getType() == Entry.TYPE_MSG) {
-				sysmsg.add(e);
-				log.fine("add server error message: " + e);
-				return;// w = msg;
-			}
-			if (w == null)
-				throw new NullPointerException(e.getType() + ": Entry type unknown");
-			w.add(e);
-			if (update) {
-				Collections.sort(w, new EntryComparator());
-				updatePath(new TreePath(new Object[] { root, w }));
-			}
-		}
-
-		public void removeData(Entry e) {
-			removeData(e, true);
-		}
-
-		private void removeData(Entry e, boolean update) {
-			NamedList<?> w = null;
-			if (e.getType() == Entry.TYPE_LINK)
-				w = links;
-			else if (e.getType() == Entry.TYPE_REPEATER)
-				w = repeat;
-			else if (e.getType() == Entry.TYPE_STATION)
-				w = stations;
-			else if (e.getType() == Entry.TYPE_CONF)
-				w = conf;
-			else if (e.getType() == Entry.TYPE_MSG)
-				return;// w = msg;
-			if (w == null)
-				throw new NullPointerException(e.getType() + ": Entry type unknown");
-			w.remove(e);
-			if (update)
-				deletedPath(new TreePath(new Object[] { root, w, e }));
-		}
-	}
 
 	private class NodeList {
 		ArrayList<Object> list;
@@ -5294,6 +4957,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		public Object getRoot() {
 			return root;
 		}
+		
+		NodeList nodeFor( String key ) {
+			return null;
+		}
 
 		void fillData(List<Entry> v) {
 			Map<String, String> cn = new HashMap<String, String>();
@@ -5405,14 +5072,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 								return e1.getStation().getCall().compareTo(e2.getStation().getCall());
 							} else {
 								return o1.toString().compareTo(o2.toString());
-								// throw new ClassCastException(
-								// o1.getClass().getName()+" <>
-								// "+o2.getClass().getName() );
 							}
-							// } else if( o2 instanceof Entry ) {
-							// throw new ClassCastException(
-							// o1.getClass().getName()+" <>
-							// "+o2.getClass().getName() );
 						} else {
 							return o1.toString().compareTo(o2.toString());
 						}
@@ -5420,17 +5080,17 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				});
 				log.finer("done");
 			}
-			Iterator<Object> ii = root.list.iterator();
-			ArrayList<NodeList> rmv = new ArrayList<NodeList>();
-			while (ii.hasNext()) {
-				NodeList ln = (NodeList) ii.next();
-				if (ln.list.size() == 0)
-					rmv.add(ln);
-			}
-			Iterator<NodeList> nii = rmv.iterator();
-			while (nii.hasNext()) {
-				root.list.remove(nii.next());
-			}
+//			Iterator<Object> ii = root.list.iterator();
+//			ArrayList<NodeList> rmv = new ArrayList<NodeList>();
+//			while (ii.hasNext()) {
+//				NodeList ln = (NodeList) ii.next();
+//				if (ln.list.size() == 0)
+//					rmv.add(ln);
+//			}
+//			Iterator<NodeList> nii = rmv.iterator();
+//			while (nii.hasNext()) {
+//				root.list.remove(nii.next());
+//			}
 			log.finer("Sorting completed....");
 		}
 
