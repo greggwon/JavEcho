@@ -285,7 +285,7 @@ public class ConnectionManager implements AudioEventHandler {
 						(prm.isAllowConferences() ? 
 							prm.getConferenceCount()+"" :
 							"1")+
-						"allowed) from "+name+" ("+addr+") "
+						" allowed) from "+name+" ("+addr+") "
 					).printStackTrace();		
 			} else {
 				throw new ConnectionNotPossibleException(
@@ -293,7 +293,7 @@ public class ConnectionManager implements AudioEventHandler {
 						(prm.isAllowConferences() ? 
 							prm.getConferenceCount()+"" :
 							"1")+
-						"allowed) to "+name+" ("+addr+") "
+						" allowed) to "+name+" ("+addr+") "
 					);
 			}
 		}

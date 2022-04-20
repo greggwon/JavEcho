@@ -5369,27 +5369,38 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						}
 					}
 					NodeList rl = null;
+					// If there is such a Region #, check for an existing region NodeList
 					if (r >= 0 && r < rlv.size()) {
 						log.log(Level.FINE, "rlv has {0} items, getting {1}", new Object[] { rlv.size(), r });
-						rlv.get(r);
+						rl = rlv.get(r);
 					}
+					
+					// No existing list, create one for this region
 					if (rl == null) {
 						rl = new NodeList("Region " + r, new ArrayList<Object>());
 						cl.list.add(rl);
+						// Provide a region to list map entry
 						ct.put("" + r, rl);
-						if (r < rlv.size())
+						if (r < rlv.size()) {
+							// replace the null item with the actual list
 							rlv.set(r, rl);
-						else {
+						} else {
+							// Fill out the list with null lists until the slot we need
 							while (r >= rlv.size()) {
 								rlv.add(null);
 							}
+							// Now put the new list into its slot
 							rlv.set(r, rl);
 						}
 					}
+					// replace the cl reference with the sublist for the NA region
+					// so that the add happens to the right list.
 					cl = rl;
 				}
+				// add the station to the list for continent or region
 				cl.list.add(e);
 			}
+			// Now sort the lists with everything in now.
 			for (NodeList nl : ct.values()) {
 				log.finer("sorting: " + nl.name + "...");
 				Collections.sort(nl.list, new Comparator<Object>() {
@@ -5419,16 +5430,17 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				});
 				log.finer("done");
 			}
-			Iterator<Object> ii = root.list.iterator();
 			ArrayList<NodeList> rmv = new ArrayList<NodeList>();
-			while (ii.hasNext()) {
-				NodeList ln = (NodeList) ii.next();
+			
+			// Remove any region/list with no stations.
+			// Create the list of nodes to remove
+			for( Object nn :  root.list ) {
+				NodeList ln = (NodeList)nn;
 				if (ln.list.size() == 0)
 					rmv.add(ln);
 			}
-			Iterator<NodeList> nii = rmv.iterator();
-			while (nii.hasNext()) {
-				root.list.remove(nii.next());
+			for( NodeList n : rmv ) {
+				root.list.remove( n );
 			}
 			log.finer("Sorting completed....");
 		}
