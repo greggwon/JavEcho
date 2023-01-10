@@ -1,6 +1,5 @@
 package org.wonderly.ham.audio;
 
-import javax.sound.midi.*;
 import java.io.*;
 import java.util.*;
 import java.util.logging.*;
@@ -13,30 +12,34 @@ import javax.sound.sampled.*;
  */
 public class AudioMorseSender implements MorseControl {
 	SourceDataLine line;
-	static final int samples = 44000;
+	static final int SAMPLES = 44000;
 	static int volume = 3000;
+	static int MIN_DB = -20;
 	static final AudioFormat playFormat = new AudioFormat(
-		samples, 16, 1, true, true );
-	Logger log = Logger.getLogger( getClass().getName() );
+		SAMPLES, 16, 1, true, true );
+	static final Logger log = Logger.getLogger(AudioMorseSender.class.getName() );
 	int charRate = 25, wordRate = 25, freq = 800, wdotlen, charslen, samps;
-	Hashtable<Character,String> chars;
+	Map<Character,String> chars;
 	
+	@Override
 	public void setPitchFreq( int freqHz ) throws UnsupportedOperationException {
 		freq = freqHz;
 	}
 
+	@Override
 	public void setVolumeLevelDb( int db ) {
 		if( db > 0 )
 			db = -db;
-		if( db < -20 )
-			db = -19;
-		volume = (32767 * (20+db)) / 20;
-		log.fine("setVolumeLevelDb: db="+db+" becomes "+volume );
+		if( db < MIN_DB )
+			db = MIN_DB;
+		volume = (32767 * (Math.abs(MIN_DB)+db)) / Math.abs(MIN_DB);
+		log.log(Level.FINE, "setVolumeLevelDb: db={0} becomes {1}", new Object[]{db, volume});
 	}
 
 	/**
 	 *  Set the waveform max amplitude, 0-32767
 	 *	default is 10000.
+	 * @param val
 	 */
 	public static void setMaxAmplitude( int val ) {
 		volume = (int)Math.min(Math.max(val,0), 32767);
@@ -57,25 +60,11 @@ public class AudioMorseSender implements MorseControl {
 		buildCharTable();
 	}
 
-	public void finalize() {
-		if( line != null ) {
-//			try {
-				line.stop();
-//			} catch( IOException ex ) {
-//			}
-//			try {
-				line.close();
-//			} catch( IOException ex ) {
-//			}
-			line = null;
-		}
-	}
-
 	protected void getLine() throws IOException {
 		
 		if( line != null )
 			return;
-		log.fine("Format: "+playFormat );
+		log.log(Level.FINE, "Format: {0}", playFormat);
 		final DataLine.Info info = new DataLine.Info(
 			SourceDataLine.class, playFormat);
 		if (!AudioSystem.isLineSupported(info)) {
@@ -84,94 +73,89 @@ public class AudioMorseSender implements MorseControl {
 		progress("playback: getLine");
 		try {
 			line = (SourceDataLine)AudioSystem.getLine(info);
-			line.open( playFormat, samples*8 );
+			line.open(playFormat, SAMPLES*8 );
 			line.start();
 		} catch( LineUnavailableException ex ) {
 			throw (IOException)(new IOException( ex.toString() ).initCause( ex ));
 		}
 	}
 	
-	protected void buildCharTable() {
-		chars = new Hashtable<Character,String>();
-		chars.put(new Character('A'),"·-");
-		chars.put(new Character('B'),"-···");
-		chars.put(new Character('C'),"-·-·");
-		chars.put(new Character('D'),"-··");
-		chars.put(new Character('E'),"·");
-		chars.put(new Character('F'),"··-·");
-		chars.put(new Character('G'),"--·");
-		chars.put(new Character('H'),"····");
-		chars.put(new Character('I'),"··");
-		chars.put(new Character('J'),"·---");
-		chars.put(new Character('K'),"-·-");
-		chars.put(new Character('L'),"·-··");
-		chars.put(new Character('M'),"--");
-		chars.put(new Character('N'),"-·");
-		chars.put(new Character('O'),"---");
-		chars.put(new Character('P'),"·--·");
-		chars.put(new Character('Q'),"--·-");
-		chars.put(new Character('R'),"·-·");
-		chars.put(new Character('S'),"···");
-		chars.put(new Character('T'),"-");
-		chars.put(new Character('U'),"··-");
-		chars.put(new Character('V'),"···-");
-		chars.put(new Character('W'),"·--");
-		chars.put(new Character('X'),"-··-");
-		chars.put(new Character('Y'),"-·--");
-		chars.put(new Character('Z'),"--··");
-		chars.put(new Character('1'),"·----");
-		chars.put(new Character('2'),"··---");
-		chars.put(new Character('3'),"···--");
-		chars.put(new Character('4'),"····-");
-		chars.put(new Character('5'),"·····");
-		chars.put(new Character('6'),"-····");
-		chars.put(new Character('7'),"--···");
-		chars.put(new Character('8'),"---··");
-		chars.put(new Character('9'),"----·");
-		chars.put(new Character('0'),"-----");
-		chars.put(new Character('.'),"·-·-·-");
-		chars.put(new Character(','),"--··--");
-		chars.put(new Character('A'),".-");
-		chars.put(new Character('B'),"-...");
-		chars.put(new Character('C'),"-.-.");
-		chars.put(new Character('D'),"-..");
-		chars.put(new Character('E'),".");
-		chars.put(new Character('F'),"..-.");
-		chars.put(new Character('G'),"--.");
-		chars.put(new Character('H'),"....");
-		chars.put(new Character('I'),"..");
-		chars.put(new Character('J'),".---");
-		chars.put(new Character('K'),"-.-");
-		chars.put(new Character('L'),".-..");
-		chars.put(new Character('M'),"--");
-		chars.put(new Character('N'),"-.");
-		chars.put(new Character('O'),"---");
-		chars.put(new Character('P'),".--.");
-		chars.put(new Character('Q'),"--.-");
-		chars.put(new Character('R'),".-.");
-		chars.put(new Character('S'),"...");
-		chars.put(new Character('T'),"-");
-		chars.put(new Character('U'),"..-");
-		chars.put(new Character('V'),"...-");
-		chars.put(new Character('W'),".--");
-		chars.put(new Character('X'),"-..-");
-		chars.put(new Character('Y'),"-.--");
-		chars.put(new Character('Z'),"--..");
-		chars.put(new Character('1'),".----");
-		chars.put(new Character('2'),"..---");
-		chars.put(new Character('3'),"...--");
-		chars.put(new Character('4'),"....-");
-		chars.put(new Character('5'),".....");
-		chars.put(new Character('6'),"-....");
-		chars.put(new Character('7'),"--...");
-		chars.put(new Character('8'),"---..");
-		chars.put(new Character('9'),"----.");
-		chars.put(new Character('0'),"-----");
-		chars.put(new Character('.'),".-.-.-");
-		chars.put(new Character(','),"--..--");
-		chars.put(new Character(' ')," ");
-		chars.put(new Character(' ')," ");
-		log.fine(chars.size()+" characters defined in: "+chars);
+	protected final void buildCharTable() {
+		chars = new HashMap<>();
+		chars.put('A',".-");
+		chars.put('B',"-...");
+		chars.put('C',"-.-.");
+		chars.put('D',"-..");
+		chars.put('E',".");
+		chars.put('F',"..-.");
+		chars.put('G',"--.");
+		chars.put('H',"....");
+		chars.put('I',"..");
+		chars.put('J',".---");
+		chars.put('K',"-.-");
+		chars.put('L',".-..");
+		chars.put('M',"--");
+		chars.put('N',"-.");
+		chars.put('O',"---");
+		chars.put('P',".--.");
+		chars.put('Q',"--.-");
+		chars.put('R',".-.");
+		chars.put('S',"...");
+		chars.put('T',"-");
+		chars.put('U',"..-");
+		chars.put('V',"...-");
+		chars.put('W',".--");
+		chars.put('X',"-..-");
+		chars.put('Y',"-.--");
+		chars.put('Z',"--..");
+		chars.put('1',".----");
+		chars.put('2',"..---");
+		chars.put('3',"...--");
+		chars.put('4',"....-");
+		chars.put('5',".....");
+		chars.put('6',"-....");
+		chars.put('7',"--...");
+		chars.put('8',"---..");
+		chars.put('9',"----.");
+		chars.put('0',"-----");
+		chars.put('?',"..--..");
+		chars.put('!',"-.-.--");
+		chars.put('.',".-.-.-");
+		chars.put(',',"--..--");
+		chars.put(';',"-.-.-.");
+		chars.put('+',".-.-.");
+		chars.put('-',"-....-");
+		chars.put('/',"-..-.");
+		chars.put('=',"-...-");
+		chars.put('a',".-");
+		chars.put('b',"-...");
+		chars.put('c',"-.-.");
+		chars.put('d',"-..");
+		chars.put('e',".");
+		chars.put('f',"..-.");
+		chars.put('g',"--.");
+		chars.put('h',"....");
+		chars.put('i',"..");
+		chars.put('j',".---");
+		chars.put('k',"-.-");
+		chars.put('l',".-..");
+		chars.put('m',"--");
+		chars.put('n',"-.");
+		chars.put('o',"---");
+		chars.put('p',".--.");
+		chars.put('q',"--.-");
+		chars.put('r',".-.");
+		chars.put('s',"...");
+		chars.put('t',"-");
+		chars.put('u',"..-");
+		chars.put('v',"...-");
+		chars.put('W',".--");
+		chars.put('X',"-..-");
+		chars.put('Y',"-.--");
+		chars.put('Z',"--..");
+		chars.put(' '," ");
+
+		log.log(Level.FINE, "{0} characters defined in: {1}", new Object[]{chars.size(), chars});
 	}
 
 	private void progress( String str ) {
@@ -180,9 +164,9 @@ public class AudioMorseSender implements MorseControl {
 
 	/**
 	 *  Send the indicated characters out
-	<p/>
+	<p>
 	Taken from I.T.U. Regulations:
-	<p/>
+	</p>
 
 	<i>The International Morse Code is to be used for all 
 	general Public Service radio communications.</i>
@@ -193,9 +177,10 @@ public class AudioMorseSender implements MorseControl {
     <li>The Space between two letters is = 3 Dots.
     <li>The Space between two words is = 7 Dots. 
     </ul>
-    <p/>
+    <p>
     For the purposes of determining the speed of transmission
     (words per minute):
+	</p>
     <ul>
     <li>A Word is = five letters + one space
     </ul>
@@ -231,12 +216,15 @@ public class AudioMorseSender implements MorseControl {
    	This is the dottime for 1 wpm.  Now, we would take this number and
    	divide it by wpm to get the ms per dot for that wpm.  Thus,
    	1276/12wpm = 106ms per dot for 12 wpm.
+	 * @param str
+	 * @throws java.io.IOException
 	 */
+	@Override
 	public void sendMorseChars( String str ) throws IOException {
 		log.fine("Get audio out line");
 		getLine();
 		try {
-			log.fine("Sending chars: \""+str+"\"");
+			log.log(Level.FINE, "Sending chars: \"{0}\"", str);
 			doSendChars( str );
 		} finally {
 			line.close();
@@ -246,7 +234,7 @@ public class AudioMorseSender implements MorseControl {
 	
 	protected void doSendChars( String str ) throws IOException {
 		str = str.toUpperCase();
-		log.fine("Sending chars: "+str );
+		log.log(Level.FINE, "Sending chars: {0}", str);
 		// 10 seconds of audio
 		int off = 0;
 
@@ -254,8 +242,8 @@ public class AudioMorseSender implements MorseControl {
 		// express a single 360 degree wave at freq hz.
 		// we need the size of 1/2 the wave form to calculate
 		// the size of the form array for putting in half
-		// of the wave for.
-		samps = samples/freq/2;
+		// of the wave form.
+		samps = SAMPLES/freq/2;
 
 		// 1276 is the number of milliseconds a dit would
 		// be for a 1wpm morse rate.  So, we need to divide
@@ -267,32 +255,33 @@ public class AudioMorseSender implements MorseControl {
 		// dotlen is now the number of milliseconds
 		// needed for a dit.
 
-		log.fine( "samps: "+samps+", millis for dit: "+dotlen);
+		log.log(Level.FINE, "samps: {0}, millis for dit: {1}", new Object[]{samps, dotlen});
 
 		// To calculate the number of samples in a dit
 		// time we do:
 		// samples is number of samples in a second.
 		// so we need to find the number of samples in
 		// the number of milliseconds in dotlen.
-		dotlen = (samples * dotlen) / 1000 / samps;
+		dotlen = (SAMPLES * dotlen) / 1000 / samps;
 
 		// The space between words is 7 dottime
 		int splen = (int)(wdotlen*7*samps);
 		splen = splen & ~1;
 		byte[]bsp = new byte[splen];
-		log.fine("charRate: "+charRate+", wordRate: "+wordRate );
-		log.fine("samples: "+samples+", dotlen: "+dotlen+", splen: "+splen );
+		log.log(Level.FINE, "charRate: {0}, wordRate: {1}", new Object[]{charRate, wordRate});
+		log.log(Level.FINE, "samples: {0}, dotlen: {1}, splen: {2}", new Object[]{SAMPLES, dotlen, splen});
 
 		// The Space between two letters is = 3 Dots
 		// The Space between parts of the same letter is = 1 Dot
 		// so we need 2 dot times after the trailing 1 dot time
 		// to get 3 dot times.
-		log.fine("samples for "+freq+"hz: "+samps );
+		log.log(Level.FINE, "samples for {0}hz: {1}", new Object[]{freq, samps});
 
 		// Allocate the array for a half single wave form
 		form = new int[ (int)samps+1 ];
-		byte[]buf = new byte[samples*10];
+		byte[]buf = new byte[SAMPLES*10];
 
+		// Construct the wave magnitude for each sample.
 		for( int i = 0; i < samps; ++i ) {
 			int deg = (int)((180.0 * i)/samps);
 			int val = (int)(volume * Math.sin( 
@@ -301,12 +290,12 @@ public class AudioMorseSender implements MorseControl {
 		}
 		for( int i = 0; i < str.length(); ++i ) {
 			String set = chars.get(str.charAt(i));
-			log.fine("Send char: '"+str.charAt(i)+"'");
+			log.log(Level.FINE, "Send char: ''{0}''", str.charAt(i));
 			for( int j = 0; j < set.length(); ++j ) {
-				log.fine("encoding: '"+set.charAt(j)+"'");
+				log.log(Level.FINE, "encoding: ''{0}''", set.charAt(j));
 				off = encodeSym( buf, set.charAt(j), off );
 			}
-			log.finer("writing out "+off+" bytes" );
+			log.log(Level.FINER, "writing out {0} bytes", off);
 			line.write( buf, 0, off );
 			off = 0;
 			line.write( bsp, 0, bsp.length );
@@ -328,7 +317,7 @@ public class AudioMorseSender implements MorseControl {
 			symlen = symlen*3;
 		}
 
-		log.fine( "symlen for '"+sym+"': "+symlen );
+		log.log(Level.FINE, "symlen for ''{0}'': {1}", new Object[]{sym, symlen});
 		if( sym != ' ' ) {
 			for( int i = 0; i < symlen/2; ++i ) {
 				// positive side of wave form
@@ -357,37 +346,41 @@ public class AudioMorseSender implements MorseControl {
 
 	private void insert( byte[]buf, int off, int val ) {
 		if( log.isLoggable(Level.FINEST) )
-			log.finest("inserting sample: "+val+" at "+off );
+			log.log(Level.FINEST, "inserting sample: {0} at {1}", new Object[]{val, off});
 		buf[off+1] = (byte)(val&0xff);
 		buf[off] = (byte)(val>>8);
 	}
 
 	/**
-	 *  Set the character rate in Words per Minute.
-	 *  This establishes the symbol rate for each
-	 *  letter.
+	 *  Set the character rate in Words per Minute.This establishes the symbol rate for each
+  letter.
+	 * @param wpm
 	 */
+	@Override
 	public void setCharRate( int wpm ) {
 		charRate = wpm;
 	}
 
 	/** 
-	 *  Set the word rate in Words per minute.
-	 *  This establishes the spacing rate
+	 *  Set the word rate in Words per minute.This establishes the spacing rate
+	 * @param wpm
 	 */
+	@Override
 	public void setWordRate( int wpm ) {
 		wordRate = wpm;
 	}
 
 	/**
 	 *  This operation returns the next chars
-	 *  that are being received.  If receive is
-	 *  not supported, this method will throw
-	 *  the UnsupportedOperationException
+	 *  that are being received.If receive is
+  not supported, this method will throw
+  the UnsupportedOperationException
 	 *
+	 * @return 
 	 *  @throws UnsupportedOperationException if receive is not supported
 	 *            by the implementation.
 	 */
+	@Override
 	public String receiveMorse() throws UnsupportedOperationException {
 		throw new UnsupportedOperationException("Receive not supported");
 	}
@@ -396,6 +389,7 @@ public class AudioMorseSender implements MorseControl {
 	 *  @return whether receive is supported by the
 	 *  implementation.
 	 */
+	@Override
 	public boolean isReceiveSupported() {
 		return false;
 	}
