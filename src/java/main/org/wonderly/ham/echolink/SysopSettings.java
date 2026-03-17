@@ -9,11 +9,14 @@ import org.wonderly.awt.*;
 import org.wonderly.swing.*;
 import java.util.*;
 import java.io.*;
+import org.wonderly.ham.echolink.prefs.*;
 import java.util.prefs.*;
 import java.util.logging.*;
 import org.wonderly.swing.prefs.*;
 import javax.swing.filechooser.FileFilter;
-import javax.comm.*;
+import gnu.io.*;
+import java.lang.reflect.InvocationTargetException;
+import org.wonderly.ham.echolink.prefs.*;
 
 /**
  *  This dialog encapsulats all the sysop mode settings.  It manipulates
@@ -234,11 +237,11 @@ import javax.comm.*;
 
 </table>
  */
-public class SysopSettings extends JDialog {
+public class SysopSettings extends CancellableDialog {
 	private Javecho je;
 	private Preferences prefs;
 	private SwingPreferencesMapper pm;
-	private Logger log = Logger.getLogger( "org.wonderly.ham.javecho.sysop" );
+	private static final Logger log = Logger.getLogger( "org.wonderly.ham.javecho.sysop" );
 	private String station;
 
 	public SysopSettings( Javecho jav, Parameters parms ) {
@@ -260,7 +263,7 @@ public class SysopSettings extends JDialog {
 		bldDialog(getContentPane());
 		try {
 			prefs.flush();
-		} catch( Exception ex ) {
+		} catch( BackingStoreException | RuntimeException ex ) {
 			log.log( Level.SEVERE, ex.toString(), ex );
 		}
 	}
@@ -268,6 +271,7 @@ public class SysopSettings extends JDialog {
 	public static void main( String args[] ) {
 		SysopSettings ss = new SysopSettings( null, null );
 		ss.addWindowListener( new WindowAdapter() {
+			@Override
 			public void windowClosing( WindowEvent ev ) {
 				System.exit(3);
 			}
@@ -290,45 +294,41 @@ public class SysopSettings extends JDialog {
 		pk.pack( okay = new JButton("Okay") ).gridx(0).gridy(1).west();
 		okay.requestFocus();
 		pk.pack( cancel = new JButton("Cancel") ).gridx(1).gridy(1).east();
-		final boolean cancelled[] = new boolean[1];
-		okay.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
-				setVisible(false);
-			}
+
+		okay.addActionListener((ActionEvent ev) -> {
+			cancelled = false;
+			setVisible(false);
 		});
-		cancel.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
-				setVisible(false);
-			}
+		cancel.addActionListener((ActionEvent ev) -> {
+			cancelled = true;
+			setVisible(false);
 		});
 		addWindowListener( new WindowAdapter() {
+			@Override
 			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
+				cancelled = true;
 			}
 		});
 		pack();
 		setSize( 400, 500 );
 		setLocationRelativeTo( je );
 		okay.requestFocus();
-		setVisible(true);
-		log.info("Dialog closed, cancelled: " + cancelled[0] );
-
-		if( cancelled[0] == false ) {
-			// store values back in preferences.
-			log.info("Committing Preferences");
-			pm.commit();
-		}
+	}
+	@Override
+	public void onClose() {
+		// store values back in preferences.
+		log.info("Committing Preferences");
+		pm.commit();
 	}
 	
-	private class GrayedTextField extends JTextField {
+	public static class GrayedTextField extends JTextField {
 		public GrayedTextField( String val ) {
 			super(val);
 		}
 		public GrayedTextField() {
 			super();
 		}
+		@Override
 		public void setEnabled( boolean how ) {
 			super.setEnabled(how);
 			setOpaque(how);
@@ -344,18 +344,19 @@ public class SysopSettings extends JDialog {
 		public NumericSpinner(int val) {
 			super( new SpinnerNumberModel() );
 			mod = (SpinnerNumberModel)getModel();
-			mod.setValue( new Integer( val ) );
+			mod.setValue(val);
 		}
+		@Override
 		public void setEnabled( boolean how ) {
 			super.setEnabled(how);
 			JSpinner.DefaultEditor editor = (JSpinner.DefaultEditor)getEditor();
 			editor.getTextField().setOpaque(how);
 		}
 		public int getIntValue() {
-			return ((Integer)mod.getValue()).intValue();
+			return ((Integer)mod.getValue());
 		}
 		public void setIntValue( int val ) {
-			mod.setValue( new Integer( val ) );
+			mod.setValue(val);
 		}
 	}
 
@@ -424,9 +425,11 @@ public class SysopSettings extends JDialog {
 		l.setLabelFor( serialPort );
 		fillSerialPorts( serialPort );
 		pm.map( new PrefManager<Component>() {
+			@Override
 			public boolean prepare( Component comp ) {
 				return true;
 			}
+			@Override
 			public boolean commit( Component comp ) {
 				String prt = (String)((JComboBox)comp).getSelectedItem();
 				if( prt == null )
@@ -435,6 +438,7 @@ public class SysopSettings extends JDialog {
 					prt );
 				return true;
 			}
+			@Override
 			public void setValueIn( Component comp ) {
 				JComboBox box = (JComboBox)comp;
 				box.setSelectedItem( 
@@ -468,10 +472,8 @@ public class SysopSettings extends JDialog {
 		l.setLabelFor( tripDuration );
 		pm.map( "RxCtrl/duration", 50, tripDuration );
 
-		ActionListener lis = new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				rxTypeSel();
-			}
+		ActionListener lis = (ActionEvent ev) -> {
+			rxTypeSel();
 		};
 		rxTypeSel();
 		ModalComponent tripComp = new ModalComponent( antiTrip );
@@ -608,14 +610,17 @@ public class SysopSettings extends JDialog {
 			).gridx(0).gridy(1).fillx();
 		fillSerialPorts( rfSerPort );
 		pm.map( new PrefManager<Component>() {
+			@Override
 			public boolean prepare( Component comp ) {
 				return true;
 			}
+			@Override
 			public boolean commit( Component comp ) {
 				prefs.put( "TxCtrl/serialport",
 					(String)((JComboBox)comp).getSelectedItem() );
 				return true;
 			}
+			@Override
 			public void setValueIn( Component comp ) {
 				JComboBox box = (JComboBox)comp;
 				box.setSelectedItem( 
@@ -658,7 +663,7 @@ public class SysopSettings extends JDialog {
 		} else {
 			try {
 				SwingUtilities.invokeAndWait( r );
-			} catch( Exception ex ) {
+			} catch( InterruptedException | InvocationTargetException | RuntimeException ex ) {
 			}
 		}
 	}
@@ -666,35 +671,35 @@ public class SysopSettings extends JDialog {
 	private void fillSerialPorts( JComboBox ports ) {
 		try {
 			Enumeration e =  CommPortIdentifier .getPortIdentifiers();
-			Vector<String>v = new Vector<String>();
+			ArrayList<String>v = new ArrayList<>();
 			while( e.hasMoreElements() ) {
 				CommPortIdentifier cp = ( CommPortIdentifier )e.nextElement();
-				if( cp.getPortType() == cp.PORT_SERIAL ) {
-					v.addElement(cp.getName());
+				if( cp.getPortType() == CommPortIdentifier.PORT_SERIAL ) {
+					v.add(cp.getName());
 				}
 			}
 			
 			Collections.sort( v );
-			for( int i = 0; i < v.size(); ++i ) {
-				ports.addItem( v.elementAt(i) );
-			}
-			//		ports.addItem( cp.getName() );
-			
-			ports.setEnabled(true);
-			if(true)return;
-			ports.addItem("COM1");
-			ports.addItem("COM2");
-			ports.addItem("COM3");
-			ports.addItem("COM4");
+			runInSwing(() -> {
+				for( int i = 0; i < v.size(); ++i ) {
+					ports.addItem( v.get(i) );
+				}
+				//		ports.addItem( cp.getName() );
+
+				ports.setEnabled(true);
+			});
+//			if(true)return;
+//			ports.addItem("COM1");
+//			ports.addItem("COM2");
+//			ports.addItem("COM3");
+//			ports.addItem("COM4");
 		} catch( Exception ex ) {
 			log.log( Level.SEVERE, ex.toString(), ex );
-			runInSwing( new Runnable() {
-				public void run() {
-				}
+			runInSwing(() -> {
+				ports.removeAllItems();
+				ports.addItem("Serial Config Error?");
+				ports.setEnabled(false);
 			});
-			ports.removeAllItems();
-			ports.addItem("Serial Config Error?");
-			ports.setEnabled(false);
 		}
 	}
 	
@@ -768,10 +773,9 @@ public class SysopSettings extends JDialog {
 		final JButton adv = new JButton("Advanced..." );
 		ppk.pack( adv 
 			).gridx(1).gridy(1).fillx().weightx(0).inset(0,0,0,5);
-		adv.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				advancedDTMF( pm );
-			}
+		adv.addActionListener((ActionEvent ev) -> {
+			AdvancedDTMF d = new AdvancedDTMF( je, this, pm );
+			d.performDialog();
 		});
 		
 		JPanel p4 = new JPanel();
@@ -803,62 +807,69 @@ public class SysopSettings extends JDialog {
 			new DTMFAction( "Status",        "08" )
 		};
 
-		final Vector<String> actions = new Vector<String>();
+		final ArrayList<String> actions = new ArrayList<>();
 		
 		fpk.pack( new JScrollPane( tonActs = 
 				new JTable( new DefaultTableModel() {
+			@Override
 			public int getColumnCount() {
 				return 2;
 			}
+			@Override
 			public int getRowCount() {
 				return dtmfActs.length;
 			}
+			@Override
 			public String getColumnName(int col) {
 				return new String[] { "Function", "Sequence" }[col];
 			}
+			@Override
 			public Object getValueAt( int row, int col ) {
 				switch(col) {
 					case 0:
 						return dtmfActs[row].act;
 					case 1:
-						return actions.elementAt(row);
+						return actions.get(row);
 				}
 				return "???";
 			}
+			@Override
 			public void setValueAt( Object val, int row, int col ) {
 				if( col == 1 ) {
-					actions.setElementAt( val.toString(), row );
+					actions.add( row, val.toString() );
 				}
 			}
 		} ) ) ).gridx(0).gridy(0).fillboth().gridh(6).inset( 10, 10, 10, 10 );
 		pm.map( new PrefManager<Component>() {
+			@Override
 			public boolean prepare( Component comp ) {
 				return true;
 			}
+			@Override
 			public boolean commit( Component comp ) {
 				Preferences pr = prefs.node("DTMF");
 				pr = pr.node("actions");
 				for( int i = 0; i < dtmfActs.length; ++i ) {
-					pr.put( dtmfActs[i].act.toLowerCase(), actions.elementAt(i) );
+					pr.put( dtmfActs[i].act.toLowerCase(), actions.get(i) );
 				}
 				return true;
 			}
+			@Override
 			public void setValueIn( Component comp ) {
 				Preferences pr = prefs.node("DTMF");
 				pr = pr.node("actions");
-				actions.setSize( dtmfActs.length );
+				actions.ensureCapacity(dtmfActs.length );
 				for( int i = 0; i < dtmfActs.length; ++i ) {
-					actions.setElementAt( pr.get( dtmfActs[i].act.toLowerCase(),
-						dtmfActs[i].dtmf ), i );
+					actions.add( i, pr.get( dtmfActs[i].act.toLowerCase(),
+						dtmfActs[i].dtmf ) );
 				}
 			}
 		}, tonActs );
 
 		y = -1;
 		final JButton resDefs = new JButton("Reset to Defaults");
-		resDefs.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-			}
+		resDefs.addActionListener((ActionEvent ev) -> {
+			reportException(new RuntimeException("Reset to Defaults not implemented"));
 		});
 		fpk.pack( resDefs
 			).gridx(1).gridy(++y).fillx().weightx(0).inset(10,5,0,5);
@@ -878,272 +889,25 @@ public class SysopSettings extends JDialog {
 		fpk.pack( new JPanel() ).gridx(1).gridy(++y).filly();
 		final JButton stationShorts = 
 			new JButton("Station Shortcuts...");
-		stationShorts.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				stationShortCuts( pm );
-			}
+		stationShorts.addActionListener((ActionEvent ev) -> {
+			StationShortcuts ss = new StationShortcuts( je, SysopSettings.this, pm );
+			ss.performDialog();
 		});
 		fpk.pack( stationShorts
 			).gridx(1).gridy(++y).fillx().weightx(0).inset(0,5,0,5);
 		return p;
 	}
-
-	private JTable shrtTbl;
-	private int shrtCnt = 0;
-	private DefaultTableModel shrtMod;
-	private void stationShortCuts( PreferencesMapper ppm ) {
-		final JDialog dlg = new JDialog( this, 
-			"Station Shortcuts", true );
-		Packer pk = new Packer( dlg.getContentPane() );
-		int y = -1;
-		JLabel l;
-		Preferences pnn = 
-			ppm.getPreferencesNode().node("DTMF");
-		final Preferences pr = pnn.node("shortcuts" );
-		PreferencesMapper pm = new PreferencesMapper( pr );
-		shrtCnt = pr.getInt("count",0);
-		pk.pack( new JScrollPane( shrtTbl = new JTable(
-				shrtMod = new DefaultTableModel() {
-			public int getColumnCount() {
-				return 2;
-			}
-			public int getRowCount() {
-				return shrtCnt;
-			}
-			public String getColumnName( int col ) {
-				switch( col ) {
-					case 0: return "Callsign";
-					case 1: return "Code";
-				}
-				return "unknown";
-			}
-			public Object getValueAt( int row, int col ) {
-				Preferences pn = pr.node(row+"");
-				switch(col) {
-					case 0:	return pn.get( "call", "" );
-					case 1: return pn.get( "code", "" );
-				}
-				return "";
-			}
-			public void setValueAt( Object obj, int row, int col ) {
-				Preferences pn = pr.node(row+"");
-				switch( col ) {
-					case 0:
-						pn.put( "call", obj.toString() );
-						break;
-					case 1:
-						pn.put( "code", obj.toString() );
-						break;
-				}
-			}
-			public boolean isCellEditable(int row, int column) {
-				return true;
-			}
-		} ) ) ).gridx(0).gridy(++y).fillboth().inset(6,6,6,6);
-		
-		JPanel bp = new JPanel();
-		Packer bpk = new Packer( bp );
-		
-		pk.pack( bp ).gridx(1).gridy(y).filly().inset(6,6,6,6);
-		JButton addNew = new JButton( "Add New" );
-		addNew.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				Preferences pn = pr.node( ""+shrtCnt );
-				pn.put("call","");
-				pn.put("code","");
-				TableModelEvent tev = new TableModelEvent(
-					shrtMod, shrtCnt, shrtCnt, 
-					TableModelEvent.ALL_COLUMNS,
-					TableModelEvent.INSERT );
-				++shrtCnt;
-				pr.putInt("count",shrtCnt);
-				shrtMod.newRowsAdded( tev );
-				shrtTbl.requestFocus();
-				shrtTbl.setSurrendersFocusOnKeystroke(true);
-				shrtTbl.editCellAt( shrtCnt-1, 0 );
-			}
-		});
-		bpk.pack( addNew 
-			).gridx(0).gridy(0).fillx().weightx(0);
-		final JButton remove = new JButton( "Remove" );
-		final JButton removeAll = new JButton( "Remove All" );
-
-		remove.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int rows[] = shrtTbl.getSelectedRows();
-				for( int i = rows.length-1; i >= 0; --i ) {
-					for( int j = rows[i]; j < shrtCnt-1; ++j ) {
-						Preferences pc = pr.node(j+"");
-						Preferences pn = pr.node((j+1)+"");
-						pc.put( "call", pn.get("call","") );
-						pc.put( "code", pn.get("code","") );
-					}
-					--shrtCnt;
-				}
-				pr.putInt("count",shrtCnt);
-				TableModelEvent tev = new TableModelEvent(
-					shrtMod );
-				shrtMod.newDataAvailable( tev );
-				shrtTbl.clearSelection();
-
-				removeAll.setEnabled(shrtCnt > 0);				
-			}
-		});
-		bpk.pack( remove 
-			).gridx(0).gridy(1).fillx().weightx(0).inset(4,0,4,0);
-
-		removeAll.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				pr.putInt("count",shrtCnt=0);
-				TableModelEvent tev = new TableModelEvent(
-					shrtMod );
-				shrtMod.newDataAvailable( tev );
-				shrtTbl.clearSelection();
-				removeAll.setEnabled(false);
-				remove.setEnabled(false);
-			}
-		});
-		bpk.pack( removeAll 
-			).gridx(0).gridy(2).fillx().weightx(0);
-
-		remove.setEnabled(false);
-		removeAll.setEnabled(shrtCnt > 0);
-		shrtTbl.getSelectionModel().addListSelectionListener(
-				new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				remove.setEnabled( shrtTbl.getSelectedRowCount() > 0 );
-				removeAll.setEnabled( shrtCnt > 0 );
-			}
-		});
-		bpk.pack( new JPanel() ).gridx(0).gridy(3).filly();
-
-		pk.pack( new JSeparator() 
-			).gridx(0).gridy(++y).gridw(2).fillx().inset(6,6,6,6);
-
-		JButton okay = new JButton( "Okay" );
-		okay.requestFocus();
-		JButton cancel = new JButton( "Cancel" );
-		pk.pack( okay ).gridx(0).gridy(++y).west();
-//		pk.pack( cancel ).gridx(1).gridy(y).east();
-		final boolean cancelled[] = new boolean[1];
-		okay.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
-				if( shrtTbl.isEditing() )
-					((DefaultCellEditor)
-					shrtTbl.getCellEditor()).stopCellEditing();
-				dlg.setVisible(false);
-			}
-		});
-		cancel.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
-				dlg.setVisible(false);
-			}
-		});
-		dlg.addWindowListener( new WindowAdapter() {
-			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
-			}
-		});
-		dlg.pack();
-		dlg.setSize( 300, 300 );
-		dlg.setLocationRelativeTo(this);
-		dlg.setVisible(true);
-		
-		if(cancelled[0] == false ) {
-			pm.commit();
-		}
+	private void reportException( Exception ex ) {
+		JOptionPane.showMessageDialog(this, ex.toString());
 	}
 
-	private GrayedTextField dtmfFineTune, dtmfFreqToler, dtmfSNRatio, dtmfDBTwist;
-	private void advancedDTMF( PreferencesMapper ppm ) {
-		final JDialog dlg = new JDialog( this, 
-			"Advanced DTMF Settings", true );
-		Packer pk = new Packer( dlg.getContentPane() );
-		int y = -1;
-		JLabel l;
 
-		SwingPreferencesMapper pm = new SwingPreferencesMapper( 
-			ppm.getPreferencesNode().node("DTMF" ) );
-		pk.pack( l = new JLabel("Fine Tuning (%):") 
-			).gridx(0).gridy(++y);
-		pk.pack( dtmfFineTune = new GrayedTextField()
-			).gridx(1).gridy(y).fillx();
-		l.setLabelFor( dtmfFineTune );
-		pm.map( "finetuning", 0, dtmfFineTune );
-
-		pk.pack( l = new JLabel("Freq Tolerance (%):")
-			).gridx(0).gridy(++y);
-		pk.pack( dtmfFreqToler = new GrayedTextField()
-			).gridx(1).gridy(y).fillx();
-		l.setLabelFor( dtmfFreqToler );
-		pm.map( "freqtolerance", 2, dtmfFreqToler );
-
-		pk.pack( l = new JLabel("S/N Radio (db):")
-			).gridx(0).gridy(++y);
-		pk.pack( dtmfSNRatio = new GrayedTextField()
-			).gridx(1).gridy(y).fillx();
-		l.setLabelFor( dtmfSNRatio );
-		pm.map( "snratio", 12, dtmfSNRatio );
-
-		pk.pack( l = new JLabel("Twist (db):")
-			).gridx(0).gridy(++y);
-		pk.pack( dtmfDBTwist = new GrayedTextField() 
-			).gridx(1).gridy(y).fillx();
-		l.setLabelFor( dtmfDBTwist );
-		pm.map( "twistdb", 4, dtmfDBTwist );
-
-		JButton resDefs = new JButton( "Reset to Default" );
-		pk.pack( resDefs ).gridx(0).gridy(++y);
-		pk.pack( new JSeparator()
-			).gridx(0).gridy(++y).gridw(2).fillx().inset(6,6,6,6);
-		resDefs.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				dtmfFineTune.setText( "0" );
-				dtmfFreqToler.setText( "2" );
-				dtmfSNRatio.setText( "12" );
-				dtmfDBTwist.setText( "4" );
-			}
-		});
-		
-		JButton okay = new JButton( "Okay" );
-		JButton cancel = new JButton( "Cancel" );
-		pk.pack( okay ).gridx(0).gridy(++y).west();
-		pk.pack( cancel ).gridx(1).gridy(y).east();
-		okay.requestFocus();
-		final boolean cancelled[] = new boolean[1];
-		okay.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
-				dlg.setVisible(false);
-			}
-		});
-		cancel.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
-				dlg.setVisible(false);
-			}
-		});
-		dlg.addWindowListener( new WindowAdapter() {
-			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
-			}
-		});
-		dlg.pack();
-		dlg.setLocationRelativeTo(this);
-		dlg.setVisible(true);
-		
-		if(cancelled[0] == false ) {
-			pm.commit();
-		}
-	}
 
 	public void testStationIdMorse(String id) {
 		try {
-			log.info("pttSettings: "+getPttSettings() );
+			log.log(Level.INFO, "pttSettings: {0}", getPttSettings());
 			je.sendMorse( getPttSettings(), id );
-		} catch( Exception ex ) {
+		} catch( IOException | RuntimeException ex ) {
 			log.log( Level.SEVERE, ex.toString(), ex );
 		}
 	}
@@ -1196,12 +960,10 @@ public class SysopSettings extends JDialog {
 		spk.pack( identSet ).gridx(1).gridy(2).west();
 		spk.pack( identFile = new GrayedTextField() 
 			).gridx(0).gridy(3).gridw(3).fillx().inset(3,3,3,3);
-		identSet.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				File f = selectAudioFile( prefs, "Audio Files" );
-				if( f != null ) {
-					identFile.setText( f.toString() );
-				}
+		identSet.addActionListener((ActionEvent ev) -> {
+			File f = selectAudioFile( prefs, "Audio Files" );
+			if( f != null ) {
+				identFile.setText( f.toString() );
 			}
 		});
 		pm.map( "Ident/audio/file", station+".wav", identFile );
@@ -1213,10 +975,9 @@ public class SysopSettings extends JDialog {
 		JButton morseSettings = new JButton("Settings...");
 		morseComp.add( morseSettings );
 		morseSettings.setMargin( new Insets( 2,2,2,2 ) );
-		morseSettings.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				morseSettings( pm, identMorse.getText() );
-			}
+		morseSettings.addActionListener((ActionEvent ev) -> {
+			MorseSettings ms = new MorseSettings( je, this, pm, identMorse.getText() );
+			ms.performDialog();
 		});
 
 		pm.map( "Ident/audio/on", false, idFile );
@@ -1227,25 +988,24 @@ public class SysopSettings extends JDialog {
 		pk.pack( span ).gridx(0).gridy(0).fillx();
 		final JButton identTest = new JButton("Test");
 		pk.pack( identTest ).gridx(1).gridy(0).fillx().weightx(0).inset(0,4,0,4);
-		identTest.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				new ComponentUpdateThread( identTest ) {
-					public Object construct() {
-						try {
-							if( idMorse.isSelected() ) {
-								testStationIdMorse(identMorse.getText());
-							} else if( idSpoken.isSelected() ) {
-								testStationIdSpoken(identCall.getText());
-							} else if( idFile.isSelected() ) {
-								testStationIdFile(identFile.getText());
-							}
-						} catch( Exception ex ) {
-							je.reportException(ex);
+		identTest.addActionListener((ActionEvent ev) -> {
+			new ComponentUpdateThread( identTest ) {
+				@Override
+				public Object construct() {
+					try {
+						if( idMorse.isSelected() ) {
+							testStationIdMorse(identMorse.getText());
+						} else if( idSpoken.isSelected() ) {
+							testStationIdSpoken(identCall.getText());
+						} else if( idFile.isSelected() ) {
+							testStationIdFile(identFile.getText());
 						}
-						return null;
+					} catch( IOException | RuntimeException ex ) {
+						je.reportException(ex);
 					}
-				}.start();
-			}
+					return null;
+				}
+			}.start();
 		});
 		JPanel op = new JPanel();
 		Packer opk = new Packer( op );
@@ -1339,135 +1099,6 @@ public class SysopSettings extends JDialog {
 		return p;
 	}
 
-	private JSlider morsePitch, morseSpeed, morseLevel;
-	private void morseSettings( PreferencesMapper ppm,
-			final String morseId ) {
-		final JDialog dlg = new JDialog( this, 
-			"Morse Settings", true );
-		Packer pk = new Packer( dlg.getContentPane() );
-		int y = -1;
-		JLabel l;
-
-		SwingPreferencesMapper pm = new SwingPreferencesMapper( 
-			ppm.getPreferencesNode().node("Ident").node("morse" ) );
-
-		pk.pack( l = new JLabel( "Speed", JLabel.CENTER)
-			).gridx(0).gridy(++y).fillx().gridw(4).inset(10,0,0,0);
-		final JLabel spdVal = new JLabel("0", JLabel.CENTER );
-		pk.pack( new JPanel() ).gridx(0).gridy(++y).fillx();
-		pk.pack( spdVal ).gridx(1).gridy(y).fillx().weightx(0);
-		pk.pack( new JLabel(" wpm") ).gridx(2).gridy(y);
-		pk.pack( new JPanel() ).gridx(3).gridy(y).fillx();
-		pk.pack( morseSpeed = new JSlider( 5, 35 ) 
-			).gridx(0).gridy(++y).gridw(4).fillx();
-		pm.map( "speed", 20, morseSpeed );
-		l.setLabelFor( morseSpeed );
-		morseSpeed.setPaintTicks(true);
-		morseSpeed.setMajorTickSpacing(5);
-		morseSpeed.addChangeListener( new ChangeListener() {
-			public void stateChanged( ChangeEvent ev ) {
-				spdVal.setText( morseSpeed.getValue()+"" );
-				je.setMorseWPM( morseSpeed.getValue() );
-			}
-		});
-		spdVal.setText( morseSpeed.getValue()+"" );
-
-		pk.pack( l = new JLabel( "Pitch", JLabel.CENTER )
-			).gridx(0).gridy(++y).fillx().gridw(4).inset(10,0,0,0);
-		final JLabel ptchVal = new JLabel("0", JLabel.CENTER );
-		pk.pack( new JPanel() ).gridx(0).gridy(++y).fillx();
-		pk.pack( ptchVal ).gridx(1).gridy(y).fillx().weightx(0);
-		pk.pack( new JLabel("hz") ).gridx(2).gridy(y);
-		pk.pack( new JPanel() ).gridx(3).gridy(y).fillx();
-		pk.pack( morsePitch = new JSlider( 300, 3000 ) 
-			).gridx(0).gridy(++y).gridw(4).fillx();
-		l.setLabelFor( morsePitch );
-		pm.map( "pitch", 438, morsePitch );
-		morsePitch.setPaintTicks(true);
-		morsePitch.setMajorTickSpacing(100);
-		morsePitch.addChangeListener( new ChangeListener() {
-			public void stateChanged( ChangeEvent ev ) {
-				ptchVal.setText( morsePitch.getValue()+"" );
-				try {
-					je.setMorseIdFreq( morsePitch.getValue() );
-				} catch( UnsupportedOperationException ex ) {
-					JOptionPane.showMessageDialog( dlg, ex );
-					morsePitch.setEnabled(false);
-				}
-			}
-		});
-		ptchVal.setText( morsePitch.getValue()+"" );
-
-		pk.pack( l = new JLabel( "Volume", JLabel.CENTER ) 
-			).gridx(0).gridy(++y).fillx().gridw(4).inset(10,0,0,0);
-		final JLabel lvlVal = new JLabel("0", JLabel.CENTER );
-		pk.pack( new JPanel() ).gridx(0).gridy(++y).fillx();
-		pk.pack( lvlVal ).gridx(1).gridy(y).fillx().weightx(0);
-		pk.pack( new JLabel("db") ).gridx(2).gridy(y);
-		pk.pack( new JPanel() ).gridx(3).gridy(y).fillx();
-		pk.pack( morseLevel = new JSlider( -200, 0 ) 
-			).gridx(0).gridy(++y).gridw(4).fillx();
-		l.setLabelFor( morseLevel );
-		morseLevel.addChangeListener( new ChangeListener() {
-			public void stateChanged( ChangeEvent ev ) {
-				lvlVal.setText( (morseLevel.getValue()/10.0)+"" );
-				try {
-					je.setMorseIdVolume( morseLevel.getValue() );
-				} catch( IOException ex ) {
-				}
-			}
-		});
-		pm.map( "volume", -146, morseLevel );
-		lvlVal.setText( (morseLevel.getValue()/10.0)+"" );
-		morseLevel.setPaintTicks(true);
-		morseLevel.setMajorTickSpacing(20);
-		
-		pk.pack( new JSeparator() 
-			).gridx(0).gridw(4).gridy(++y).fillx().inset(4,4,4,4);
-
-		JButton okay = new JButton( "Okay" );
-		JButton cancel = new JButton( "Cancel" );
-		final JButton test = new JButton( "Test" );
-		okay.requestFocus();
-		pk.pack( okay ).gridx(0).gridy(++y).west();
-		pk.pack( test ).gridx(1).gridw(2).gridy(y).east().inset(0,4,0,4);
-		pk.pack( cancel ).gridx(3).gridy(y).east();
-		final boolean cancelled[] = new boolean[1];
-		okay.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
-				dlg.setVisible(false);
-			}
-		});
-		test.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				new ComponentUpdateThread( test ) {
-					public Object construct() {
-						testStationIdMorse(morseId);
-						return null;
-					}
-				}.start();
-			}
-		});
-		cancel.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
-				dlg.setVisible(false);
-			}
-		});
-		dlg.addWindowListener( new WindowAdapter() {
-			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
-			}
-		});
-		dlg.pack();
-		dlg.setLocationRelativeTo(this);
-		dlg.setVisible(true);
-		
-		if(cancelled[0] == false ) {
-			pm.commit();
-		}
-	}
 
 	private JComboBox connAnnounce, discAnnounce, muteAnnounce;
 	private JCheckBox connIncludeCall, discIncludeCall;
@@ -1547,12 +1178,10 @@ public class SysopSettings extends JDialog {
 		playWelComp.add( welFile );
 		playWelComp.add( welMsg );
 		playWelComp.configure();
-		welMsg.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				File f = selectAudioFile( prefs, "Audio Files" );
-				if( f != null ) {
-					welFile.setText( f.toString() );
-				}
+		welMsg.addActionListener((ActionEvent ev) -> {
+			File f = selectAudioFile( prefs, "Audio Files" );
+			if( f != null ) {
+				welFile.setText( f.toString() );
 			}
 		});
 
@@ -1612,9 +1241,11 @@ public class SysopSettings extends JDialog {
 		}
 		JFileChooser fc = new JFileChooser(msgDir);
 		fc.setFileFilter( new FileFilter() {
+			@Override
 			public String getDescription() {
 				return "Audio Files";
 			}
+			@Override
 			public boolean accept( File file ) {
 				if( file.isDirectory() ) return true;
 				String name = file.getName();
@@ -1622,13 +1253,11 @@ public class SysopSettings extends JDialog {
 					return true;
 				if( name.toLowerCase().endsWith(".mp3") ) 
 					return true;
-				if( name.toLowerCase().endsWith(".au") ) 
-					return true;
-				return false;
+				return name.toLowerCase().endsWith(".au");
 			}
 		});
 		if( fc.showOpenDialog( SysopSettings.this ) == 
-				fc.APPROVE_OPTION ) {
+				JFileChooser.APPROVE_OPTION ) {
 			Preferences pn = prefs.node("Options");
 			pn.put( "msgdir", 
 				(msgDir = fc.getSelectedFile()).getParent() );
@@ -1642,7 +1271,7 @@ public class SysopSettings extends JDialog {
 	private JButton evPlayMsg, evSelect;
 	private JList evList;
 	private GrayedTextField evCurMsg;
-	private Vector<String> evs = new Vector<String>();
+	private ArrayList<String> evs = new ArrayList<String>();
 	private JComboBox evSpeechSpeed, sigToneBurst;
 	private JComboBox sigToneFreq;
 	private JSpinner sigToneDuration;
@@ -1652,10 +1281,10 @@ public class SysopSettings extends JDialog {
 		JLabel l;
 		int y=-1;
 
-		pk.pack( l = new JLabel("Select an event from the list, "+
+		pk.pack( new JLabel("Select an event from the list, "+
 			"then choose" ) 
 			).gridx(0).gridy(++y).fillx().west().inset(0,5,0,0);
-		pk.pack( l = new JLabel("either Default or Custom")
+		pk.pack( new JLabel("either Default or Custom")
 			).gridx(0).gridy(++y).fillx().west().inset(0,5,0,0);
 
 		int ey = -1;
@@ -1676,16 +1305,18 @@ public class SysopSettings extends JDialog {
 			"Activity Reminder"
 		};
 		for( int i = 0; i < events.length; ++i ) {
-			evs.addElement( events[i] );
+			evs.add( events[i] );
 		}
-		evList.setListData( evs );
+		evList.setListData( evs.toArray() );
 		pm.map( "Signals/events/selected", 0, evList );
 		final boolean evDefs[] = new boolean[7];
 		final String evMsg[] = new String[7];
 		pm.map( new PrefManager<Component>() {
+				@Override
 				public boolean prepare( Component comp ) {
 					return true;
 				}
+				@Override
 				public boolean commit( Component comp ) {
 					for (int i = 0; i < events.length; ++i ) {
 						String event = events[i];
@@ -1697,6 +1328,7 @@ public class SysopSettings extends JDialog {
 					}
 					return true;
 				}
+				@Override
 				public void setValueIn( Component comp ) {
 					for (int i = 0; i < events.length; ++i ) {
 						String event = events[i];
@@ -1711,23 +1343,22 @@ public class SysopSettings extends JDialog {
 //		epk.pack( new JPanel() 
 //			).gridx(2).gridy(ey).filly().gridh(2).weighty(0);
 		epk.pack( evPlayMsg = new JButton("Play") ).gridx(1).gridy(ey);
-		evPlayMsg.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				new ComponentUpdateThread( evPlayMsg ) {
-					public Object construct() {
-						try {
-							int idx = evList.getSelectedIndex();
-							if( !evDefs[idx] ) {
-								je.transmitAudio( getPttSettings(), evMsg[idx] );
-							} else {
-							}
-						} catch( Exception ex ) {
-							je.reportException(ex);
+		evPlayMsg.addActionListener((ActionEvent ev) -> {
+			new ComponentUpdateThread( evPlayMsg ) {
+				@Override
+				public Object construct() {
+					try {
+						int idx = evList.getSelectedIndex();
+						if( !evDefs[idx] ) {
+							je.transmitAudio( getPttSettings(), evMsg[idx] );
+						} else {
 						}
-						return null;
+					} catch( IOException | RuntimeException ex ) {
+						je.reportException(ex);
 					}
-				}.start();
-			}
+					return null;
+				}
+			}.start();
 		});
 	
 		ButtonGroup dcgrp = new ButtonGroup();
@@ -1740,27 +1371,25 @@ public class SysopSettings extends JDialog {
 
 		final ModalComponent defComp = new ModalComponent( evDefault );
 		final ModalComponent customComp = new ModalComponent( evCustom );
-		evList.addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				if( ev.getValueIsAdjusting() )
-					return;
-				int idx = evList.getSelectedIndex();
-				evSelect.setEnabled(idx != -1);
-				evDefault.setEnabled(idx != -1);
-				evCustom.setEnabled(idx != -1);
-				evPlayMsg.setEnabled(idx != -1);
-				if( idx != -1 ) {
-					evCurMsg.setEnabled( !evDefs[idx] );
-					if( evDefs[idx] )
-						evCurMsg.setText("");
-					else
-						evCurMsg.setText( evMsg[idx] );
-					evDefault.setSelected( evDefs[idx] );
-					evCustom.setSelected( !evDefs[idx] );
-					evSelect.setEnabled( !evDefs[idx] );
-				}
-				defComp.configure();
+		evList.addListSelectionListener((ListSelectionEvent ev) -> {
+			if( ev.getValueIsAdjusting() )
+				return;
+			int idx = evList.getSelectedIndex();
+			evSelect.setEnabled(idx != -1);
+			evDefault.setEnabled(idx != -1);
+			evCustom.setEnabled(idx != -1);
+			evPlayMsg.setEnabled(idx != -1);
+			if( idx != -1 ) {
+				evCurMsg.setEnabled( !evDefs[idx] );
+				if( evDefs[idx] )
+					evCurMsg.setText("");
+				else
+					evCurMsg.setText( evMsg[idx] );
+				evDefault.setSelected( evDefs[idx] );
+				evCustom.setSelected( !evDefs[idx] );
+				evSelect.setEnabled( !evDefs[idx] );
 			}
+			defComp.configure();
 		});
 		int idx = evList.getSelectedIndex();
 		evPlayMsg.setEnabled(idx!=-1);
@@ -1776,21 +1405,17 @@ public class SysopSettings extends JDialog {
 			evCustom.setSelected( !evDefs[idx] );
 			evSelect.setEnabled( !evDefs[idx] );
 		}
-		evDefault.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idx = evList.getSelectedIndex();
-				evDefs[idx] = evDefault.isSelected();
-				evSelect.setEnabled( !evDefs[idx] );
-				evCurMsg.setText( "" );
-			}
+		evDefault.addActionListener((ActionEvent ev) -> {
+			int idx1 = evList.getSelectedIndex();
+			evDefs[idx1] = evDefault.isSelected();
+			evSelect.setEnabled(!evDefs[idx1]);
+			evCurMsg.setText( "" );
 		});
-		evCustom.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idx = evList.getSelectedIndex();
-				evDefs[idx] = evDefault.isSelected();
-				evSelect.setEnabled( !evDefs[idx] );
-				evCurMsg.setText( evMsg[idx] );
-			}
+		evCustom.addActionListener((ActionEvent ev) -> {
+			int idx1 = evList.getSelectedIndex();
+			evDefs[idx1] = evDefault.isSelected();
+			evSelect.setEnabled(!evDefs[idx1]);
+			evCurMsg.setText(evMsg[idx1]);
 		});
 		dcgrp.add( evDefault );
 		dcgrp.add( evCustom );
@@ -1803,15 +1428,13 @@ public class SysopSettings extends JDialog {
 		epk.pack( evCurMsg
 			).gridx(1).gridy(++ey).fillx().gridw(2);
 		l.setLabelFor( evCurMsg );
-		evSelect.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				final int idx = evList.getSelectedIndex();
-				File f = selectAudioFile( prefs, "Audio Files" );
-				if( f != null ) {
-					evMsg[idx] = f.toString();
-					evDefs[idx] = false;
-					evCurMsg.setText( f.toString() );
-				}
+		evSelect.addActionListener((ActionEvent ev) -> {
+			final int idx1 = evList.getSelectedIndex();
+			File f = selectAudioFile( prefs, "Audio Files" );
+			if (f != null) {
+				evMsg[idx1] = f.toString();
+				evDefs[idx1] = false;
+				evCurMsg.setText( f.toString() );
 			}
 		});
 		customComp.relate( defComp );
@@ -1949,14 +1572,17 @@ public class SysopSettings extends JDialog {
 			).gridx(1).gridy(dy).fillx().gridw(2);
 		fillSerialPorts( remDialModem );
 		pm.map( new PrefManager<Component>() {
+			@Override
 			public boolean prepare( Component comp ) {
 				return true;
 			}
+			@Override
 			public boolean commit( Component comp ) {
 				prefs.put( "Remote/dialin/port",
 					(String)((JComboBox)comp).getSelectedItem() );
 				return true;
 			}
+			@Override
 			public void setValueIn( Component comp ) {
 				JComboBox box = (JComboBox)comp;
 				box.setSelectedItem( 
@@ -2037,7 +1663,7 @@ public class SysopSettings extends JDialog {
 			).gridx(1).gridy(++ly).inset(0,3,0,3);
 		lpk.pack( new JLabel("mm.nn")
 			).gridx(2).gridy(ly).inset(0,3,0,3);
-		lpk.pack( l= new JLabel("Lat:") 
+		lpk.pack( new JLabel("Lat:") 
 			).gridx(0).gridy(++ly).inset(0,3,0,0);
 		lpk.pack( infoLatDeg = new GrayedTextField("00") 
 			).gridx(1).gridy(ly).fillx().weightx(0).inset(0,2,0,2);
@@ -2049,7 +1675,7 @@ public class SysopSettings extends JDialog {
 			new JComboBox(new String[]{ "North", "South"})
 			).gridx(3).gridy(ly).inset(2,2,2,2);
 		pm.map( "Info/Lat/region", 0, infoLatRegion );
-		lpk.pack( l = new JLabel("Freq (MHz):")
+		lpk.pack( new JLabel("Freq (MHz):")
 			).gridx(4).gridy(ly).inset(0,10,0,5).east();
 		lpk.pack( infoFreq = new GrayedTextField() ).gridx(5).gridy(ly).fillx();
 		pm.map( "Info/frequency", "", infoFreq );
@@ -2066,7 +1692,7 @@ public class SysopSettings extends JDialog {
 			new JComboBox(new String[]{ "West", "East"})
 			).gridx(3).gridy(ly).inset(2,2,2,2);
 		pm.map( "Info/Lon/region", 0, infoLonRegion );
-		lpk.pack( l = new JLabel("PL (if any):") 
+		lpk.pack( new JLabel("PL (if any):") 
 			).gridx(4).gridy(ly).inset(0,10,0,5).east();
 		lpk.pack( infoPLTone = new GrayedTextField() ).gridx(5).gridy(ly).fillx();
 		pm.map("Info/pltone", "", infoPLTone );
@@ -2075,26 +1701,26 @@ public class SysopSettings extends JDialog {
 		JPanel hp = new JPanel();
 		Packer hpk = new Packer( hp );
 		int hy = -1;
-		hpk.pack( l = new JLabel( "Power (W):" )
+		hpk.pack( new JLabel( "Power (W):" )
 			).gridx(0).gridy(++hy).east();
 		hpk.pack( infoPowerOut = new JComboBox(new Integer[] { 0, 1, 4, 9, 16, 25, 
 			36, 49, 64, 81, 100, 120, 150, 200} 
 			) ).gridx(1).gridy(hy).fillx();
 		pm.map("Info/powerout", 0, infoPowerOut );
-		hpk.pack( l = new JLabel( "Antenna Gain (dB):" ) 
+		hpk.pack( new JLabel( "Antenna Gain (dB):" ) 
 			).gridx(2).gridy(hy).inset(0,10,0,4).east();
 		hpk.pack( infoDBGain = 
 			new JComboBox(new Integer[] { 0,1,2,3,4,5,6,7,8,9}) 
 			).gridx(3).gridy(hy).fillx();
 		pm.map("Info/antennagain", 0, infoDBGain );
 
-		hpk.pack( l = new JLabel( "HAAT (ft):" ) 
+		hpk.pack( new JLabel( "HAAT (ft):" ) 
 			).gridx(0).gridy(++hy).east();
 		hpk.pack( infoHaat =
 			new JComboBox(new Integer[] {10,20,40,80,160,320,
 			640,1280,2560,5120}	) ).gridx(1).gridy(hy).fillx();
 		pm.map("Info/haat", 0, infoHaat );
-		hpk.pack( l = new JLabel( "Directivity:" ) 
+		hpk.pack( new JLabel( "Directivity:" ) 
 			).gridx(2).gridy(hy).inset(0,10,0,4).east();
 		hpk.pack( infoDirection = 
 			new JComboBox(new String[] {
@@ -2123,14 +1749,17 @@ public class SysopSettings extends JDialog {
 		fillSerialPorts( infoTNCPort );
 //		pm.map("Info/Report/APRS/tncport", 0, infoTNCPort );
 		pm.map( new PrefManager<Component>() {
+			@Override
 			public boolean prepare( Component comp ) {
 				return true;
 			}
+			@Override
 			public boolean commit( Component comp ) {
 				prefs.put( "Info/Report/APRS/tncport",
 					(String)((JComboBox)comp).getSelectedItem() );
 				return true;
 			}
+			@Override
 			public void setValueIn( Component comp ) {
 				JComboBox box = (JComboBox)comp;
 				box.setSelectedItem( 
@@ -2158,15 +1787,13 @@ public class SysopSettings extends JDialog {
 		autoInitComp.add( l );
 		autoInitComp.configure();
 		final JLabel ul = l;
-		infoRepAPRS.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				log.fine("Toggled APRS to: "+infoRepAPRS.isSelected() );
-				autoInitComp.configure();
-				ul.setEnabled( infoAutoInit.isSelected() && 
+		infoRepAPRS.addActionListener((ActionEvent ev) -> {
+			log.log(Level.FINE, "Toggled APRS to: {0}", infoRepAPRS.isSelected());
+			autoInitComp.configure();
+			ul.setEnabled( infoAutoInit.isSelected() && 
 					infoRepAPRS.isSelected() );
-				infoAPRSPath.setEnabled( infoRepAPRS.isSelected() &&
+			infoAPRSPath.setEnabled( infoRepAPRS.isSelected() &&
 					infoAutoInit.isSelected() );
-			}
 		});
 
 		pm.map("Info/Report/APRS/unproto", 0, infoAPRSPath );

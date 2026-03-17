@@ -22,10 +22,12 @@ public class AlarmEditor extends JDialog {
 		dirty = how;
 	}
 
+	@Override
 	public Point getLocation() {
 		return super.getLocation();
 	}
 
+	@Override
 	public Dimension getSize() {
 		return super.getSize();
 	}
@@ -45,10 +47,8 @@ public class AlarmEditor extends JDialog {
 		hist.add( call );
 		list.setListData( hist.toArray() );
 		if( isVisible() ) {
-			SwingUtilities.invokeLater( new Runnable() {
-				public void run() {
-					list.ensureIndexIsVisible( hist.size() - 1 );
-				}
+			SwingUtilities.invokeLater(() -> {
+				list.ensureIndexIsVisible( hist.size() - 1 );
 			});
 		}
 		dirty = true;
@@ -62,7 +62,7 @@ public class AlarmEditor extends JDialog {
 	public AlarmEditor( final JFrame par) {
 		super( par, "Alarms", false );
 		this.par = par;
-		hist = new Vector<String>();
+		hist = new ArrayList<>();
 		Packer pk = new Packer( getContentPane() );
 		list = new JList( );
 		list.setListData( hist.toArray() );
@@ -90,44 +90,34 @@ public class AlarmEditor extends JDialog {
 		pk.pack( removeall ).gridx(1).gridy(5).inset(2,2,2,2).fillx().weightx(0);
 		pk.pack( new JPanel() ).gridx(1).gridy(6).filly();
 		remove.setEnabled(false);
-		list.addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				remove.setEnabled( list.getSelectedIndex() != -1 );
-			}
+		list.addListSelectionListener((ListSelectionEvent ev) -> {
+			remove.setEnabled( list.getSelectedIndex() != -1 );
 		});
 
-		okay.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				setVisible(false);
-			}
+		okay.addActionListener((ActionEvent ev) -> {
+			setVisible(false);
 		});
-		add.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				String str = JOptionPane.showInputDialog( par, "Call Sign?" );
-				if( str == null )
-					return;
-				hist.add(str);
-				list.setListData(hist.toArray());
-				dirty = true;
-			}
+		add.addActionListener((ActionEvent ev) -> {
+			String str = JOptionPane.showInputDialog( par, "Call Sign?" );
+			if( str == null )
+				return;
+			hist.add(str);
+			list.setListData(hist.toArray());
+			dirty = true;
 		});
-		remove.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				hist.remove( list.getSelectedIndex() );
-				list.setListData( hist.toArray() );
-				dirty = true;
-			}
+		remove.addActionListener((ActionEvent ev) -> {
+			hist.remove( list.getSelectedIndex() );
+			list.setListData( hist.toArray() );
+			dirty = true;
 		});
-		removeall.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idx = JOptionPane.showConfirmDialog( AlarmEditor.this, "Remove All Entries?", 
+		removeall.addActionListener((ActionEvent ev) -> {
+			int idx = JOptionPane.showConfirmDialog( AlarmEditor.this, "Remove All Entries?", 
 					"Remove All Confirmation",
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE );
-				if( idx == JOptionPane.CANCEL_OPTION )
-					return;
-				list.setListData( new String[]{} );
-				dirty = true;
-			}
+			if( idx == JOptionPane.CANCEL_OPTION )
+				return;
+			list.setListData( new String[]{} );
+			dirty = true;
 		});
 //		cancel.addActionListener( new ActionListener() {
 //			public void actionPerformed( ActionEvent ev ) {

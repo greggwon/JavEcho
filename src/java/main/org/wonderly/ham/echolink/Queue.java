@@ -5,7 +5,7 @@ import java.util.logging.*;
 /**
  *  <b>Logger:</b><code>org.wonderly.ham.echolink.queue</code>
  */
-class Queue {
+public class Queue {
 	AudioEntry head;
 	AudioEntry tail;
 	int cnt;

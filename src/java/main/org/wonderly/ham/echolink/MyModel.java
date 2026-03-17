@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
@@ -15,8 +16,9 @@ public class MyModel implements TreeModel {
 	private static final Logger log = Logger.getLogger( MyModel.class.getName() );
 	volatile List<Entry> data;
 	volatile String root;
-	NamedList<NamedList<Entry>> nodes = new NamedList<NamedList<Entry>>("Loading...");
-	List<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
+	volatile Javecho je;
+	NamedList<NamedList<Entry>> nodes = new NamedList<>("Loading...");
+	List<TreeModelListener> listeners = new ArrayList<>();
 	String name;
 	volatile boolean dbg = true;
 	NamedList<Entry> stations;
@@ -40,140 +42,150 @@ public class MyModel implements TreeModel {
 		return data;
 	}
 
+	@Override
 	public String toString() {
 		return name;
 	}
 
-	public MyModel(List<Entry> v, String name, AlarmManager mgr, List<Entry>sMsgs, boolean debug) {
+	public MyModel(Javecho je, List<Entry> v, String name, AlarmManager mgr, List<Entry>sMsgs, boolean debug) {
 		this.name = name;
 		root = name;
+		this.je = je;
 		dbg = debug;
 		sysmsg = sMsgs;
 		this.alarmMgr = mgr;
 		setData(v);
 	}
 
-	public void setData(List<Entry> v) {
-		data = new ArrayList<Entry>();
+	public final void setData(List<Entry> v) {
+		data = new ArrayList<>();
 		fillData(v);
 		updateAll();
 	}
 
+	@Override
 	public int getChildCount(Object node) {
 		if (dbg)
-			Javecho.progress(this + ": getChildCount(" + node + ")");
+			je.progress(this + ": getChildCount(" + node + ")");
 		if (node == root) {
 			if (dbg)
-				Javecho.progress(this + ":" + nodes + ": size=" + nodes.size());
+				je.progress(this + ":" + nodes + ": size=" + nodes.size());
 			return nodes.size();
 		}
 		if (node instanceof NamedList == false)
 			return 0;
 		NamedList v = (NamedList) node;
 		if (dbg)
-			Javecho.progress(this + ": " + v + ": size=" + v.size());
+			je.progress(this + ": " + v + ": size=" + v.size());
 		return v.size();
 	}
 
+	@Override
 	public boolean isLeaf(Object node) {
 		if (dbg)
-			Javecho.progress(this + ": [" + node + "] is leaf? " + (node instanceof Entry));
+			je.progress(this + ": [" + node + "] is leaf? " + (node instanceof Entry));
 		return node instanceof Entry;
 	}
 
+	@Override
 	public int getIndexOfChild(Object parent, Object node) {
 		if (dbg)
-			Javecho.progress(this + ": getIndexOfChild(" + parent + "," + node + ")");
+			je.progress(this + ": getIndexOfChild(" + parent + "," + node + ")");
 		int idx = nodes.indexOf(parent);
 		if (parent == root) {
 			if (dbg)
-				Javecho.progress(parent + ": index of " + node + " = " + idx);
+				je.progress(parent + ": index of " + node + " = " + idx);
 			return idx;
 		}
 		if (idx == -1) {
 			if (dbg)
-				Javecho.progress(parent + " OOOOPPPPSSSS at " + node + ", no child index");
+				je.progress(parent + " OOOOPPPPSSSS at " + node + ", no child index");
 			return -1;
 		}
 		NamedList<Entry> v = nodes.get(idx);
 		if (dbg)
-			Javecho.progress(parent + ": index of " + node + " = " + v.indexOf(node));
+			je.progress(parent + ": index of " + node + " = " + v.indexOf(node));
 		return v.indexOf(node);
 	}
 
+	@Override
 	public void addTreeModelListener(TreeModelListener lis) {
 		if (dbg)
-			Javecho.progress(this + ": addTreeModelListener(" + lis + ")");
+			je.progress(this + ": addTreeModelListener(" + lis + ")");
 		listeners.add(lis);
 		TreeModelEvent ev = new TreeModelEvent(this, new Object[] { root });
 		lis.treeStructureChanged(ev);
 		lis.treeNodesChanged(ev);
 	}
 
+	@Override
 	public void removeTreeModelListener(TreeModelListener lis) {
 		if (dbg)
-			Javecho.progress(this + ": removeTreeModelListener(" + lis + ")");
+			je.progress(this + ": removeTreeModelListener(" + lis + ")");
 		listeners.remove(lis);
 	}
 
+	@Override
 	public void valueForPathChanged(TreePath path, Object value) {
 		if (dbg)
-			Javecho.progress(this + ": valueForPathChanged(" + path + "," + value + ")");
+			je.progress(this + ": valueForPathChanged(" + path + "," + value + ")");
 	}
 
+	@Override
 	public synchronized Object getChild(Object parent, int idx) {
 		if (dbg)
-			Javecho.progress(this + ": getChild(" + parent + "," + idx + ")");
+			je.progress(this + ": getChild(" + parent + "," + idx + ")");
 		if (parent == root) {
 			if (dbg)
-				Javecho.progress(parent + ": child at " + idx + " = " + nodes.get(idx));
+				je.progress(parent + ": child at " + idx + " = " + nodes.get(idx));
 			return nodes.get(idx);
 		}
 		NamedList v = (NamedList) parent;
 		if (dbg)
-			Javecho.progress(parent + ": child at " + idx + " = " + v.get(idx));
+			je.progress(parent + ": child at " + idx + " = " + v.get(idx));
 		return v.get(idx);
 	}
 
+	@Override
 	public synchronized Object getRoot() {
 		return root;
 	}
 
 	void fillData(List<Entry> v) {
 		if (stations == null)
-			stations = new NamedList<Entry>("Stations");
+			stations = new NamedList<>("Stations");
 		else
 			stations.clear();
 		if (links == null)
-			links = new NamedList<Entry>("Links");
+			links = new NamedList<>("Links");
 		else
 			links.clear();
 		if (repeat == null)
-			repeat = new NamedList<Entry>("Repeaters");
+			repeat = new NamedList<>("Repeaters");
 		else
 			repeat.clear();
 		if (conf == null)
-			conf = new NamedList<Entry>("Conferences");
+			conf = new NamedList<>("Conferences");
 		else
 			conf.clear();
-		nodes = new NamedList<NamedList<Entry>>("nodes");
-		if (name.equals("Favorites") == true || Javecho.pr.isRepeatersInStationList())
+		nodes = new NamedList<>("nodes");
+		if (name.equals("Favorites") == true || je.getParms().isRepeatersInStationList())
 			nodes.add(repeat);
-		if (name.equals("Favorites") == true || Javecho.pr.isLinksInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isLinksInStationList())
 			nodes.add(links);
-		if (name.equals("Favorites") == true || Javecho.pr.isUsersInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isUsersInStationList())
 			nodes.add(stations);
-		if (name.equals("Favorites") == true || Javecho.pr.isConferencesInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isConferencesInStationList())
 			nodes.add(conf);
 		addData(v);
 		Comparator<Entry> e = new EntryComparator();
-		if (name.equals("Favorites") == true || Javecho.pr.isRepeatersInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isRepeatersInStationList())
 			Collections.sort(repeat, e);
-		if (name.equals("Favorites") == true || Javecho.pr.isLinksInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isLinksInStationList())
 			Collections.sort(links, e);
-		if (name.equals("Favorites") == true || Javecho.pr.isUsersInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isUsersInStationList())
 			Collections.sort(stations, e);
-		if (name.equals("Favorites") == true || Javecho.pr.isConferencesInStationList())
+		if (name.equals("Favorites") == true || je.getParms().isConferencesInStationList())
 			Collections.sort(conf, e);
 	}
 
@@ -220,7 +232,7 @@ public class MyModel implements TreeModel {
 			// Toolkit.getDefaultToolkit().beep();
 			// } else
 			if (e.getStation().getCall().trim().length() > 0) {
-				Javecho.progress(e.getStation().getCall() + " already in list " + "Station Not Added");
+				je.progress(e.getStation().getCall() + " already in list " + "Station Not Added");
 			}
 			return;
 		}
@@ -235,13 +247,13 @@ public class MyModel implements TreeModel {
 				alarmMgr.checkAlarms(e.getStation());
 		}
 		boolean add = false;
-		if (Javecho.pr.isConferencesInStationList() && e.getType() == Entry.TYPE_CONF) {
+		if (je.getParms().isConferencesInStationList() && e.getType() == Entry.TYPE_CONF) {
 			add = true;
-		} else if (Javecho.pr.isUsersInStationList() && e.getType() == Entry.TYPE_STATION) {
+		} else if (je.getParms().isUsersInStationList() && e.getType() == Entry.TYPE_STATION) {
 			add = true;
-		} else if (Javecho.pr.isLinksInStationList() && e.getType() == Entry.TYPE_LINK) {
+		} else if (je.getParms().isLinksInStationList() && e.getType() == Entry.TYPE_LINK) {
 			add = true;
-		} else if (Javecho.pr.isRepeatersInStationList() && e.getType() == Entry.TYPE_REPEATER) {
+		} else if (je.getParms().isRepeatersInStationList() && e.getType() == Entry.TYPE_REPEATER) {
 			add = true;
 		} else if (e.getType() == Entry.TYPE_MSG) {
 			add = true;
@@ -252,18 +264,25 @@ public class MyModel implements TreeModel {
 		if (update)
 			Collections.sort(data, new EntryComparator());
 		NamedList<Entry> w = null;
-		if (e.getType() == Entry.TYPE_LINK)
-			w = links;
-		else if (e.getType() == Entry.TYPE_REPEATER)
-			w = repeat;
-		else if (e.getType() == Entry.TYPE_STATION)
-			w = stations;
-		else if (e.getType() == Entry.TYPE_CONF)
-			w = conf;
-		else if (e.getType() == Entry.TYPE_MSG) {
-			sysmsg.add(e);
-			log.fine("add server error message: " + e);
-			return;// w = msg;
+		switch (e.getType()) {
+			case Entry.TYPE_LINK:
+				w = links;
+				break;
+			case Entry.TYPE_REPEATER:
+				w = repeat;
+				break;
+			case Entry.TYPE_STATION:
+				w = stations;
+				break;
+			case Entry.TYPE_CONF:
+				w = conf;
+				break;
+			case Entry.TYPE_MSG:
+				sysmsg.add(e);
+				log.log(Level.FINE, "add server error message: {0}", e);
+				return;// w = msg;
+			default:
+				break;
 		}
 		if (w == null)
 			throw new NullPointerException(e.getType() + ": Entry type unknown");
@@ -280,16 +299,24 @@ public class MyModel implements TreeModel {
 
 	private void removeData(Entry e, boolean update) {
 		NamedList<?> w = null;
-		if (e.getType() == Entry.TYPE_LINK)
-			w = links;
-		else if (e.getType() == Entry.TYPE_REPEATER)
-			w = repeat;
-		else if (e.getType() == Entry.TYPE_STATION)
-			w = stations;
-		else if (e.getType() == Entry.TYPE_CONF)
-			w = conf;
-		else if (e.getType() == Entry.TYPE_MSG)
-			return;// w = msg;
+		switch (e.getType()) {
+			case Entry.TYPE_LINK:
+				w = links;
+				break;
+			case Entry.TYPE_REPEATER:
+				w = repeat;
+				break;
+			case Entry.TYPE_STATION:
+				w = stations;
+				break;
+			case Entry.TYPE_CONF:
+				w = conf;
+				break;
+			case Entry.TYPE_MSG:
+				return;// w = msg;
+			default:
+				break;
+		}
 		if (w == null)
 			throw new NullPointerException(e.getType() + ": Entry type unknown");
 		w.remove(e);

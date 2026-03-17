@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.logging.*;
 
 public class CountryAccess {
-	static ArrayList<CountryEntry> countries;
+	static ArrayList<CountryEntry> countries = new ArrayList<>();
 	static ArrayList<ZoneEntry> zones;
 	static Hashtable<String,String> conts = new Hashtable<String,String>();
 	static Logger log = Logger.getLogger( CountryAccess.class.getName() );
@@ -222,7 +222,6 @@ public class CountryAccess {
 	}
 		
 	static {
-		countries = new ArrayList<CountryEntry>(200);
 		addCountry( new CountryEntry(new String[]{"Z2A,Z2Z"},"Zimbabwe") );
 		addCountry( new CountryEntry(new String[]{"9IA,9JZ"},"Zambia") );
 		addCountry( new CountryEntry(new String[]{"YTA,YUZ","YZA,YZZ","4NA,4OZ"},"Yugoslavia") );

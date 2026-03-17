@@ -385,7 +385,7 @@ public class ConnectionManager implements AudioEventHandler {
 			receive();
 	}
  
-	private MicIO mic;
+	private volatile MicIO mic;
     void shutDown(Throwable message) {
     	log.info("ShutDown mic with message: "+message );
         if( message != null) {

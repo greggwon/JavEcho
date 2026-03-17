@@ -14,9 +14,9 @@ public class StationData implements Serializable {
 	private transient boolean wentBusy, wentIdle, discoed, connected;
 	private transient boolean busy;
 	static final long serialVersionUID = -6154353816391198317L;
-	private static Hashtable<String,StationData> stations = new Hashtable<String,StationData>();
-	private static Hashtable<String,StationData> addrs = new Hashtable<String,StationData>();
-	transient Vector sdes;
+	private static Map<String,StationData> stations = new HashMap<String,StationData>();
+	private static Map<String,StationData> addrs = new HashMap<String,StationData>();
+	transient List<rtcp_sdes_request_item> sdes;
 	private transient int dataPort = 5198, controlPort = 5199;
 
 	public static String exportHeader( boolean includeIP ) {
@@ -33,22 +33,26 @@ public class StationData implements Serializable {
 			return "null";
 		for( int i = 0; i < str.length(); ++i ) {
 			char c = str.charAt(i);
-			if( c == '"' ) {
-				ret += "\"\"";
-			} else if( c == ',' ) {
-				pref = suff = "\"";
-				ret += c;
-			} else {
-				ret += c;
+			switch (c) {
+				case '"':
+					ret += "\"\"";
+					break;
+				case ',':
+					pref = suff = "\"";
+					ret += c;
+					break;
+				default:
+					ret += c;
+					break;
 			}
 		}
 		return pref + ret + suff;
 	}
-	public void setSDES( Vector v ) {
+	public void setSDES( List<rtcp_sdes_request_item> v ) {
 		sdes = v;
 	}
 
-	public Vector getSDES() {
+	public List<rtcp_sdes_request_item> getSDES() {
 		return sdes;
 	}
 	
@@ -70,17 +74,19 @@ public class StationData implements Serializable {
 	}
 
 	public rtcp_sdes_request_item getSDESItemAt( int i ) {
-		return (rtcp_sdes_request_item)sdes.elementAt(i);
+		return sdes.get(i);
 	}
 
 	/** 
 	 *  Get the first of any SDES item of the passed rtcp_sdes_type_t RTCP_SDES_* type
 	 *  Some types have more than one occurance and thus you might need to look through
 	 *  the whole array.
+	 * @param type
+	 * @return 
 	 */
 	public byte[] getSDES( int type ) {
 		for( int i = 0; i < sdes.size(); ++i ) {
-			rtcp_sdes_request_item item = (rtcp_sdes_request_item)sdes.elementAt(i);
+			rtcp_sdes_request_item item = sdes.get(i);
 			if( item.r_item == type ) {
 				return item.r_text;
 			}
@@ -88,19 +94,18 @@ public class StationData implements Serializable {
 		return null;
 	}
 
-	public static Vector<StationData> stations() {
-		Vector<StationData> v = new Vector<StationData>();
-		Enumeration<StationData> e = stations.elements();
-		while( e.hasMoreElements() ) {
-			v.addElement( e.nextElement() );
-		}
-		return v;
+	/**
+	 *
+	 * @return snapshot copy of station list
+	 */
+	public static List<StationData> stations() {
+		return new ArrayList<>(stations.values());
 	}
 
 	public static void clearOnLine() {
-		Enumeration e = stations.elements();
-		while( e.hasMoreElements() ) {
-			StationData d = (StationData)e.nextElement();
+		Iterator<StationData> e = stations.values().iterator();
+		while( e.hasNext() ) {
+			StationData d = e.next();
 			d.connected = false;
 			d.discoed = true;
 			d.wentIdle = false;
@@ -108,6 +113,7 @@ public class StationData implements Serializable {
 		}
 	}
 
+	@Override
 	public boolean equals( Object obj ) { 
 		if( obj instanceof StationData == false )
 			return false;
@@ -115,6 +121,7 @@ public class StationData implements Serializable {
 		return call.equals( st.call );
 	}
 
+	@Override
 	public int hashCode() {
 		return call.hashCode();
 	}
@@ -165,7 +172,7 @@ public class StationData implements Serializable {
 		if( data != null ) {
 			dt.discoed = false;
 			boolean obusy = dt.busy;
-		  	dt.busy = data.indexOf("[BUSY") >= 0;
+		  	dt.busy = data.contains("[BUSY");
 		  	if( obusy && !dt.busy ) {
 		  		dt.wentIdle = true;
 		  		dt.wentBusy = false;
@@ -173,9 +180,9 @@ public class StationData implements Serializable {
 		  		dt.wentBusy = true;
 		  		dt.wentIdle = false;
 		  	}
-		  	if( data.indexOf( "[" ) >= 0 ) {
+		  	if( data.contains("[") ) {
 		  		int off = data.indexOf("[");
-		  		while( data.substring(off+1).indexOf("[") >= 0 ) {
+		  		while( data.substring(off+1).contains("[") ) {
 		  			off += data.substring(off+1).indexOf("[")+1;
 		  		}
 		  		dt.time = data.substring(off).split(" ")[1].split("]")[0];
@@ -200,10 +207,10 @@ public class StationData implements Serializable {
 				discoed = false;
 				connected = true;
 			}
-		  	busy = data.indexOf("[BUSY") >= 0;
-		  	if( data.indexOf( "[" ) >= 0 ) {
+		  	busy = data.contains("[BUSY");
+		  	if( data.contains("[") ) {
 		  		int off = data.indexOf("[");
-		  		while( data.substring(off+1).indexOf("[") >= 0 ) {
+		  		while( data.substring(off+1).contains("[") ) {
 		  			off += data.substring(off+1).indexOf("[")+1;
 		  		}
 		  		time = data.substring(off).split(" ")[1].split("]")[0];
@@ -238,6 +245,7 @@ public class StationData implements Serializable {
 	public boolean isBusy() {
 		return busy;
 	}
+	@Override
 	public String toString() {
 		return call+" "+data+" ["+id+"]";
 	}

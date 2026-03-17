@@ -14,10 +14,11 @@ import java.io.*;
 import javax.sound.sampled.*;
 import java.util.logging.*;
 
-public class PreferencesDialog extends JDialog {
+public class PreferencesDialog extends CancellableDialog {
 	private Javecho je;
 	private Parameters prm;
 	Logger log = Logger.getLogger( getClass().getName() );
+
 
 	public PreferencesDialog( final Javecho je, Parameters params ) {
 		super( je, "Preferences", true );
@@ -48,16 +49,15 @@ public class PreferencesDialog extends JDialog {
 		pack();
 		setLocationRelativeTo(je);
 		
-		final boolean cancelled[] = new boolean[1];
 		okay.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
+				cancelled = false;
 				setVisible(false);
 			}
 		});
 		cancel.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
+				cancelled = true;
 				setVisible(false);
 			}
 		});
@@ -69,12 +69,12 @@ public class PreferencesDialog extends JDialog {
 		});
 		addWindowListener( new WindowAdapter() {
 			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
+				cancelled = true;
 			}
 		});
-		setVisible(true);
-		if( cancelled[0] == true )
-			return;
+	}
+	
+	public void onClose() {
 		prm.setStationListUpdateAuto( autoListUpd.isSelected() );
 		prm.setListUpdateInterval( Integer.parseInt( listInterval.getText() ) );
 		prm.setListUpdateWhenConnected( autoWhenBusy.isSelected() );

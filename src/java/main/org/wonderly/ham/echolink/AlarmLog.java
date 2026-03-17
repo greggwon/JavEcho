@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.event.*;
 import org.wonderly.awt.*;
 import org.wonderly.swing.*;
 import java.awt.event.*;
@@ -31,18 +30,18 @@ public class AlarmLog extends JDialog {
 		hist.add( call );
 		list.setListData( hist.toArray() );
 		if( isVisible() ) {
-			SwingUtilities.invokeLater( new Runnable() {
-				public void run() {
-					list.ensureIndexIsVisible( hist.size() - 1 );
-				}
+			SwingUtilities.invokeLater(() -> {
+				list.ensureIndexIsVisible( hist.size() - 1 );
 			});
 		}
 	}
 
+	@Override
 	public Point getLocation() {
 		return super.getLocation();
 	}
 
+	@Override
 	public Dimension getSize() {
 		return super.getSize();
 	}
@@ -57,7 +56,7 @@ public class AlarmLog extends JDialog {
 		super( par, "Alarm Log", false );
 		this.je = jecho;
 		this.par = par;
-		hist = new Vector<StationData>();
+		hist = new ArrayList<>();
 		Packer pk = new Packer( getContentPane() );
 		list = new JList( );
 		list.setListData( hist.toArray() );
@@ -73,6 +72,7 @@ public class AlarmLog extends JDialog {
 //			}
 //		});
 		list.addMouseListener( new MouseAdapter() {
+			@Override
 			public void mouseClicked( MouseEvent ev ) {
 				if( ev.getClickCount() == 1 ) {
 					first = (StationData)list.getSelectedValue();
@@ -83,6 +83,7 @@ public class AlarmLog extends JDialog {
 					System.out.println("second: "+second );
 					if( first == second && first != null ) {
 						new ComponentUpdateThread( list ) {
+							@Override
 							public Object construct() {
 								try {
 									je.connectTo( first, false );
@@ -99,10 +100,8 @@ public class AlarmLog extends JDialog {
 		final JButton close = new JButton("Close");
 		pk.pack( new JSeparator() ).gridx(0).gridy(1).fillx().inset(4,4,4,4);
 		pk.pack( close ).gridx(0).gridy(2);
-		close.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				setVisible(false);
-			}
+		close.addActionListener((ActionEvent ev) -> {
+			setVisible(false);
 		});
 		pk.pack( close ).gridx(0).gridy(2).inset(2,2,2,2);
 		pack();

@@ -2,7 +2,6 @@ package org.wonderly.io;
 
 import java.util.*;
 import java.io.*;
-import org.wonderly.util.*;
 
 public class HashtableReader<K,V> {
 	ObjectInputStream os;
@@ -10,8 +9,8 @@ public class HashtableReader<K,V> {
 		this.os = os;
 	}
 	
-	public Hashtable<K,V> read() 
+	public HashMap<K,V> read() 
 			throws IOException,ClassNotFoundException {
-		return (Hashtable<K,V>)os.readObject();
+		return (HashMap<K,V>)os.readObject();
 	}
 }

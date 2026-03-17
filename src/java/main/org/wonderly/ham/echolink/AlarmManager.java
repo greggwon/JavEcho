@@ -1,5 +1,6 @@
 package org.wonderly.ham.echolink;
 
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,23 +27,25 @@ public class AlarmManager {
 	public void checkAlarms(StationData dt) {
 		if (almOnce || firstAlm)
 			return;
-		log.finer("Check for alarm of " + dt);
-		log.finest("alarms for: " + almEd.getHistory());
+		log.log(Level.FINER, "Check for alarm of {0}", dt);
+		log.log(Level.FINEST, "alarms for: {0}", almEd.getHistory());
 		if (almEd.getHistory().contains(dt.getCall()) == false) {
-			log.finer("No alarm entry for: " + dt.getCall());
+			log.log(Level.FINER, "No alarm entry for: {0}", dt.getCall());
 			return;
 		}
 		almOnce = true;
-		log.finer("Adding status for: " + dt);
+		log.log(Level.FINER, "Adding status for: {0}", dt);
 		almLog.addEntry(dt);
 		try {
-			log.fine("Sounding Alarm for: " + dt);
+			log.log(Level.FINE, "Sounding Alarm for: {0}", dt);
 			je.audio.alarm();
 			if (almLog.isVisible() == false) {
 				almLog.setVisible(true);
 			}
-		} catch (Exception ex) {
+		} catch (IOException ex) {
 			log.log(Level.WARNING, ex.toString(), ex);
+		} catch (RuntimeException ex) {
+			log.log(Level.SEVERE, ex.toString(), ex);
 		}
 	}
 }

@@ -3,8 +3,8 @@ package org.wonderly.ham.echolink;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.awt.*;
 import java.awt.event.*;
+import java.lang.reflect.InvocationTargetException;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.util.logging.*;
@@ -13,19 +13,23 @@ import org.wonderly.log.*;
 import java.util.Timer;
 import org.wonderly.io.*;
 
-import org.wonderly.jini2.*;
-import net.jini.config.*;
-import net.jini.id.*;
+// import org.wonderly.jini2.*;
+// import net.jini.config.*;
+// import net.jini.id.*;
+
+import java.util.List;
 
 /**
  *  This class is a primative, testing echolink server.  It provides
  *  The ability to create a test session between several stations and
- *  evaluate operations.  As an asside. it can also be used for a private
+ *  evaluate operations.  As an asside, it can also be used for a private
  *  server.  With some more code, it could provide some administration
  *  capabilities to allow new users to be added and existing users to
  *  be removed.
  */
-public class EcholinkServerImpl extends PersistentJiniService implements EcholinkServer {
+public class EcholinkServerImpl 
+		// extends PersistentJiniService
+		implements EcholinkServer {
 	ServerSocket sock;
 	int port = 5200;
 	boolean done;
@@ -35,24 +39,51 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 	Timer watcher;
 	static final long CONN_TIMEOUT = 400000;
 	int nextId = 1;
-	Vector<StationInfo> statlist = new Vector<StationInfo>();
-	Vector<StationInfo> pendlist = new Vector<StationInfo>();
-	Vector<StationInfo> rejlist = new Vector<StationInfo>();
-	Hashtable<String,StationInfo> stations = new Hashtable<String,StationInfo>();
-	Hashtable<String,StationInfo> connected = new Hashtable<String,StationInfo>();
-	Hashtable<InetAddress,StationInfo> byaddr = new Hashtable<InetAddress,StationInfo>();
-	Hashtable<InetAddress,String[]> reasons = new Hashtable<InetAddress,String[]>();
-	Logger log = Logger.getLogger( "org.wonderly.ham.echolink.server");
+	SimpleListModel<StationInfo> stats, pends, rejs;
+	List<StationInfo> statlist = new ArrayList<>();
+	List<StationInfo> pendlist = new ArrayList<>();
+	List<StationInfo> rejlist = new ArrayList<>();
+	Map<String,StationInfo> stations = new HashMap<>();
+	Map<String,StationInfo> connected = new HashMap<>();
+	Map<InetAddress,StationInfo> byaddr = new HashMap<>();
+	Map<InetAddress,String[]> reasons = new HashMap<>();
+	static final Logger log = Logger.getLogger( "org.wonderly.ham.echolink.server");
 
+	static EcholinkServerImpl svr;
 	public static void main( String args[] ) throws Exception {
-		new EcholinkServerImpl( args );
+		svr = new EcholinkServerImpl( args );
+		svr.StartEchoLink();
+	}
+	
+	class SimpleListModel<T> extends AbstractListModel<T> {
+		volatile List<T> data;
+		public void setListData( List<T> dt ) {
+			data = dt;
+			ListDataListener[]l =this.getListDataListeners();
+			ListDataEvent ev = new ListDataEvent( this, ListDataEvent.CONTENTS_CHANGED, 0,dt.size()-1 );
+			for( int i = 0; i < l.length; ++i ) {
+				l[i].contentsChanged(ev);
+			}
+		}
+		public SimpleListModel( List<T> lst ) {
+			data = lst;
+		}
+		@Override
+		public int getSize() {
+			return data.size();
+		}
+
+		@Override
+		public T getElementAt(int index) {
+			return data.get(index);
+		}
 	}
 
 	void bldFrame() {
 		frm = new JFrame("EchoLink Server");
 		Packer pk = new Packer( frm.getContentPane() );
-		lst = new JList(statlist);
-		plst = new JList(pendlist);
+		lst = new JList<>( stats = new SimpleListModel<>(statlist) );
+		plst = new JList<>( pends = new SimpleListModel<>(pendlist) );
 
 		JPanel lp = new JPanel();
 		lp.setBorder( BorderFactory.createTitledBorder( "Known Users" ) );
@@ -77,122 +108,93 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		Packer apk = new Packer(ap);
 		apk.pack( approve=new JButton("Approve") ).gridx(0).gridy(0).fillx().weightx(0);
 		apk.pack( reject=new JButton("Reject") ).gridx(0).gridy(1).fillx().weightx(0);
-		approve.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = plst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				for( int i = 0; idxs != null && i < idxs.length; ++i ) {
-					StationInfo si = pendlist.elementAt(idxs[i]);
-					statlist.addElement( si );
-					stations.put( si.user, si );
-					saveStations();
-					si.setPending(false);
-					v.addElement(si);
-				}
-				for( int i = 0; i < v.size(); ++i ) {
-					pendlist.removeElement( v.elementAt(i) );
-				}
-				plst.setListData( pendlist );
-				lst.setListData( statlist );
+		approve.addActionListener((ActionEvent ev) -> {
+			int idxs[] = plst.getSelectedIndices();
+			for( int i = 0; idxs != null && i < idxs.length; ++i ) {
+				StationInfo si = pendlist.get(idxs[i]);
+				statlist.add( si );
+				stations.put( si.user, si );
 				saveStations();
+				si.setPending(false);
+				pendlist.remove(si);
 			}
+
+			pends.setListData( pendlist );
+			stats.setListData( statlist );
+			saveStations();
 		});
-		apprrej.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = rlst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				for( int i = 0; idxs != null && i < idxs.length; ++i ) {
-					StationInfo si = rejlist.elementAt(idxs[i]);
-					statlist.addElement( si );
-					si.setPending(false);
-					v.addElement(si);
-				}
-				for( int i = 0; i < v.size(); ++i ) {
-					rejlist.removeElement( v.elementAt(i) );
-				}
-				rlst.setListData( rejlist );
-				lst.setListData( statlist );
-				saveStations();
+		apprrej.addActionListener((ActionEvent ev) -> {
+			int idxs[] = rlst.getSelectedIndices();
+			for( int i = 0; idxs != null && i < idxs.length; ++i ) {
+				StationInfo si = rejlist.get(idxs[i]);
+				statlist.add( si );
+				si.setPending(false);
+				rejlist.remove(si);
 			}
+			rejs.setListData( rejlist );
+			stats.setListData( statlist );
+			saveStations();
 		});
-		pendrej.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = rlst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				for( int i = 0; idxs != null && i < idxs.length; ++i ) {
-					StationInfo si = rejlist.elementAt(idxs[i]);
-					pendlist.addElement( si );
-					si.setPending(true);
-					v.addElement(si);
-				}
-				for( int i = 0; i < v.size(); ++i ) {
-					rejlist.removeElement( v.elementAt(i) );
-				}
-				rlst.setListData( rejlist );
-				plst.setListData( pendlist );
-				saveStations();
+		pendrej.addActionListener((ActionEvent ev) -> {
+			int idxs[] = rlst.getSelectedIndices();
+			for( int i = 0; idxs != null && i < idxs.length; ++i ) {
+				StationInfo si = rejlist.get(idxs[i]);
+				pendlist.add( si );
+				si.setPending(true);
+				rejlist.remove(si);
 			}
+			rejs.setListData( rejlist );
+			pends.setListData( pendlist );
+			saveStations();
 		});
-		rmvrej.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = rlst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				if( idxs == null || idxs.length == 0 )
-					return;
-				if( JOptionPane.showConfirmDialog( frm, 
+		rmvrej.addActionListener((ActionEvent ev) -> {
+			int idxs[] = rlst.getSelectedIndices();
+			//List<StationInfo>v = new ArrayList<StationInfo>();
+			if( idxs == null || idxs.length == 0 )
+				return;
+			if( JOptionPane.showConfirmDialog( frm, 
 					"Really Delete "+(
-						idxs.length > 1 ? 
-							(idxs.length+" stations") :
-							rejlist.elementAt(idxs[0] ))+"?",
+							idxs.length > 1 ?
+									(idxs.length+" stations") :
+									rejlist.get(idxs[0] ))+"?",
 					"Delete Confirmation",
 					JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE ) == JOptionPane.CANCEL_OPTION ) {
-					return;
-				}
-				for( int i = idxs.length-1; idxs != null && i >= 0; --i ) {
-					StationInfo si = rejlist.elementAt(idxs[i]);
-					deleteStation( si );
-					rejlist.removeElementAt(idxs[i]);
-				}
-				rlst.setListData( rejlist );
-				saveStations();
+				return;
 			}
+			for( int i = idxs.length-1; i >= 0; --i ) {
+				StationInfo si = rejlist.get(idxs[i]);
+				deleteStation( si );
+				rejlist.remove(idxs[i]);
+			}
+			rejs.setListData( rejlist );
+			saveStations();
 		});
-		reject.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = plst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				for( int i = 0; idxs != null && i < idxs.length; ++i ) {
-					StationInfo si = pendlist.elementAt(idxs[i]);
-					rejlist.addElement( si );
-					si.setPending(true);
-					v.addElement(si);
-				}
-				for( int i = 0; i < v.size(); ++i ) {
-					pendlist.removeElement( v.elementAt(i) );
-				}
-				plst.setListData( pendlist );
-				rlst.setListData( rejlist );
-				saveStations();
+		reject.addActionListener((ActionEvent ev) -> {
+			int idxs[] = plst.getSelectedIndices();
+			for( int i = 0; idxs != null && i < idxs.length; ++i ) {
+				StationInfo si = pendlist.get(idxs[i]);
+				rejlist.add( si );
+				si.setPending(true);
+				pendlist.remove(si);
 			}
+			pends.setListData( pendlist );
+			rejs.setListData( rejlist );
+			saveStations();
 		});
 		pendrej.setEnabled(false);
 		reject.setEnabled(false);
 		approve.setEnabled(false);
 		rmvrej.setEnabled(false);
-		plst.addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				approve.setEnabled( plst.getSelectedValue() != null );
-				reject.setEnabled( plst.getSelectedValue() != null );
-			}
+		plst.addListSelectionListener((ListSelectionEvent ev) -> {
+			approve.setEnabled( plst.getSelectedValue() != null );
+			reject.setEnabled( plst.getSelectedValue() != null );
 		});
 		rlst = new JList();
-		rlst.addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				apprrej.setEnabled( rlst.getSelectedValue() != null );
-				rmvrej.setEnabled( rlst.getSelectedValue() != null );
-				pendrej.setEnabled( rlst.getSelectedValue() != null );
-			}
+		rlst.addListSelectionListener((ListSelectionEvent ev) -> {
+			apprrej.setEnabled( rlst.getSelectedValue() != null );
+			rmvrej.setEnabled( rlst.getSelectedValue() != null );
+			pendrej.setEnabled( rlst.getSelectedValue() != null );
 		});
 		apprrej.setEnabled(false);
 		JPanel rp = new JPanel();
@@ -214,71 +216,60 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		ppk.pack( remove = new JButton("Remove") ).gridx(0).gridy(++y).fillx().weightx(0);
 		ppk.pack( edit = new JButton("Edit") ).gridx(0).gridy(++y).fillx().weightx(0);
 		ppk.pack( rej = new JButton("Reject") ).gridx(0).gridy(++y).fillx().weightx(0);
-		rej.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				int idxs[] = lst.getSelectedIndices();
-				Vector<StationInfo>v = new Vector<StationInfo>();
-				for( int i = 0; idxs != null && i < idxs.length; ++i ) {
-					StationInfo si = statlist.elementAt(idxs[i]);
-					rejlist.addElement( si );
-					si.setPending(true);
-					v.addElement(si);
-				}
-				for( int i = 0; i < v.size(); ++i ) {
-					statlist.removeElement( v.elementAt(i) );
-				}
-				rlst.setListData( rejlist );
-				lst.setListData( statlist );
+		rej.addActionListener((ActionEvent ev) -> {
+			int idxs[] = lst.getSelectedIndices();
+			for( int i = 0; idxs != null && i < idxs.length; ++i ) {
+				StationInfo si = statlist.get(idxs[i]);
+				rejlist.add( si );
+				si.setPending(true);
+				statlist.remove(si);
+			}
+			rejs.setListData( rejlist );
+			stats.setListData( statlist );
+			saveStations();
+		});
+		rej.setEnabled(false);
+		add.addActionListener((ActionEvent ev) -> {
+			StationInfo ent = new StationInfo( "", "", nextId(), 0 );
+			EditDialog dlg = new EditDialog( frm, ent, false );
+			dlg.performEdit();
+			if( dlg.isCancelled() == false ) {
+				addStation( ent );
 				saveStations();
 			}
 		});
-		rej.setEnabled(false);
-		add.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				StationInfo ent = new StationInfo( "", "", nextId(), 0 );
-				EditDialog dlg = new EditDialog( frm, ent, false );
-				if( dlg.isCancelled() == false ) {
-					addStation( ent );
-					saveStations();
-				}
-			}
-		});
-		remove.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				StationInfo ent = (StationInfo)lst.getSelectedValue();
-				int idx = JOptionPane.showConfirmDialog( frm,
+		remove.addActionListener((ActionEvent ev) -> {
+			StationInfo ent = (StationInfo)lst.getSelectedValue();
+			int idx = JOptionPane.showConfirmDialog( frm,
 					"Really Delete \""+ent.user+"\"?",
 					"Delete Confirmation",
 					JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE );
-				if( idx == JOptionPane.OK_OPTION ) {
-					statlist.removeElement(ent);
-					deleteStation(ent);
-					lst.setListData(statlist);
-					saveStations();
-				}
-			}
-		});
-		edit.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent ev ) {
-				StationInfo ent = (StationInfo)lst.getSelectedValue();
-				EditDialog dlg = new EditDialog( frm, ent, true );
+			if( idx == JOptionPane.OK_OPTION ) {
+				statlist.remove(ent);
+				deleteStation(ent);
+				stats.setListData(statlist);
 				saveStations();
 			}
+		});
+		edit.addActionListener((ActionEvent ev) -> {
+			StationInfo ent = (StationInfo)lst.getSelectedValue();
+			EditDialog dlg = new EditDialog( frm, ent, true );
+			dlg.performEdit();
+			saveStations();
 		});
 		add.setEnabled(true);
 		remove.setEnabled(false);
 		edit.setEnabled(false);
-		lst.addListSelectionListener( new ListSelectionListener() {
-			public void valueChanged( ListSelectionEvent ev ) {
-				rej.setEnabled( lst.getSelectedIndex() != -1 );
-				remove.setEnabled( lst.getSelectedIndex() != -1 );
-				edit.setEnabled( lst.getSelectedIndex() != -1 );
-			}
+		lst.addListSelectionListener((ListSelectionEvent ev) -> {
+			rej.setEnabled( lst.getSelectedIndex() != -1 );
+			remove.setEnabled( lst.getSelectedIndex() != -1 );
+			edit.setEnabled( lst.getSelectedIndex() != -1 );
 		});
 		lpk.pack( p ).gridx(1).gridy(0).fillboth().weightx(0).inset(3,3,3,3);
 		frm.pack();
 		frm.addWindowListener( new WindowAdapter() {
+			@Override
 			public void windowClosing( WindowEvent ev ) {
 				saveStations();
 				System.exit(1);
@@ -296,17 +287,22 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		JTextField name, email, loc,id;
 		JPasswordField pass;
 		boolean cancelled;
+		final boolean editing;
+		final StationInfo station;
+		final JFrame parent;
 		public boolean isCancelled() {
 			return cancelled;
 		}
 		public EditDialog( JFrame par, StationInfo who, boolean edit ) {
 			super( par, "Edit "+who, true );
-			Packer pk = new Packer( getContentPane() );
+			parent = par;
+			Packer pk = new Packer( this );
 			int y = -1;
 			pk.pack( new JLabel( "Name:" ) ).gridx(0).gridy(++y);
 			pk.pack( name = new JTextField(who.user) ).gridx(1).gridy(y).fillx();
-			if( edit )
+			if( editing = edit )
 				name.setEditable(false);
+			station = who;
 			pk.pack( new JLabel( "Password:" ) ).gridx(0).gridy(++y);
 			pk.pack( pass = new JPasswordField(who.passwd) ).gridx(1).gridy(y).fillx();
 			pk.pack( new JLabel( "Email:" ) ).gridx(0).gridy(++y);
@@ -319,87 +315,94 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 			pk.pack( new JSeparator() ).gridx(0).gridy(++y).gridw(2).fillx().inset(4,4,4,4);
 			JButton okay = new JButton("Okay");
 			JButton cancel = new JButton("Cancel");
-			okay.addActionListener( new ActionListener() {
-				public void actionPerformed( ActionEvent ev ) {
-					cancelled = false;
-					setVisible(false);
-				}
+			okay.addActionListener((ActionEvent ev) -> {
+				cancelled = false;
+				setVisible(false);
 			});
-			cancel.addActionListener( new ActionListener() {
-				public void actionPerformed( ActionEvent ev ) {
-					cancelled = true;
-					setVisible(false);
-				}
+			cancel.addActionListener((ActionEvent ev) -> {
+				cancelled = true;
+				setVisible(false);
 			});
 			pk.pack( okay ).gridx(0).gridy(++y).west();
 			pk.pack( cancel ).gridx(1).gridy(y).east();
+		}
+		public void performEdit() {
 			pack();
-			setLocationRelativeTo( par );
+			setLocationRelativeTo( parent );
 			setVisible(true);
 			if( cancelled == false ) {
-				if( edit == false ) {
-					who.user = name.getText();
+				if( editing == false ) {
+					station.user = name.getText();
 				}
-				who.passwd = pass.getText();
-				who.info = email.getText();
-				who.loc = loc.getText();
+				station.passwd = pass.getText();
+				station.info = email.getText();
+				station.loc = loc.getText();
 			}
 		}
 	}
 
 	void checkTimeouts() {
 		for( int i = 0; i < statlist.size(); ++i ) {
-			StationInfo inf = statlist.elementAt(i);
+			StationInfo inf = statlist.get(i);
 			long now = System.currentTimeMillis();
 			if( now - inf.lastTime > CONN_TIMEOUT ) {
 				try {
 					discoStation(inf);
-				} catch( Throwable ex ) {
-					ex.printStackTrace();
+				} catch( RuntimeException ex ) {
+					log.log(Level.SEVERE, ex.toString(), ex );
 				}
 			}
 		}
 	}
 
-	public EcholinkServerImpl( String args[] ) throws ConfigurationException, IOException {
-		super(args);
+	public EcholinkServerImpl( String args[] ) throws 
+			// ConfigurationException, 
+			IOException {
+		//super(args);
 		Handler h = new ConsoleHandler();
 		h.setFormatter( new StreamFormatter() );
 		log.addHandler(h);
 		log.setUseParentHandlers(false);
+	}
+	public void StartEchoLink() throws IOException {
 		bldFrame();
 		watcher = new Timer();
 		watcher.schedule( new TimerTask() {
+			@Override
 			public void run() {
 				try {
 					checkTimeouts();
-				} catch( Throwable ex ) {
-					ex.printStackTrace();
+				} catch( RuntimeException ex ) {
+					log.log(Level.SEVERE, ex.toString(), ex );
 				}
 			}
 		}, 20000, 20000 );
 		sock = new ServerSocket(port);
+	}
+	
+	public void RunServer() throws IOException {
 		loadStations();
 
-		startService();
+		//startService();
 
 		while( !done ) {
-			log.info("Accepting on: "+sock );
+			log.log(Level.INFO, "Accepting on: {0}", sock);
 			final Socket s = sock.accept();
-			log.info("Got connection: "+s );
+			log.log(Level.INFO, "Got connection: {0}", s);
 			new Thread() {
+				@Override
 				public void run() {
 					try {
 						processSession(s);
 					} catch( SocketException ex ) {
-						log.info(s+": closing: "+ex );
-					} catch( Exception ex ) {
-						ex.printStackTrace();
+						log.log(Level.INFO, "{0}: closing: {1}", new Object[]{s, ex});
+					} catch( IOException ex ) {
+						log.log(Level.FINE, "{0}: closing: {1}", new Object[]{s, ex});
 					} finally {
 						try {
 							s.close();
-						} catch( Exception ex ) {
-							ex.printStackTrace();
+						} catch( IOException ex ) {
+							log.log(Level.FINE, "{0}: closing: {1}", new Object[]{s, ex});
 						}
 					}
 				}
@@ -408,8 +411,8 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 	}
 
 	private void processSession( Socket s ) throws IOException {
-		log.info( "process session: " + s );
-		String addr = s.getInetAddress().getHostAddress();
+		log.log(Level.INFO, "process session: {0}", s);
+//		String addr = s.getInetAddress().getHostAddress();
 //		StationInfo si = byaddr.get(s);
 //		log.info( "byaddr("+s+"): "+si );
 		OutputStream os = s.getOutputStream();
@@ -425,7 +428,7 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		InputStream is = s.getInputStream();
 		while( !done ) {
 			int c = is.read();
-			log.info(s+": handling command: "+(char)c);
+			log.log(Level.INFO, "{0}: handling command: {1}", new Object[]{s, (char)c});
 			switch( c ) {
 				case 'l':
 				case 'L':
@@ -439,112 +442,100 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 					listStations( is, os, s );
 					break;
 			}
-			log.info(s+": finished command: "+(char)c);
+			log.log(Level.INFO, "{0}: finished command: {1}", new Object[]{s, (char)c});
 		}
 	}
 
 	private void logonStatus( InputStream is,
 					final OutputStream os, Socket s, boolean withPort ) throws IOException {
-		byte[]data = new byte[400];
-		int c;
-		int i = 0;
-		int c1 = 0, c2 = 0, cnt = 0;
-		while( ( c = is.read() ) != 0xAC ) {
-			log.fine("Callsign Read: ("+c+")'"+((char)c)+"'" );
-			if( c == -1 )
-				throw new EOFException("Premature EOF" );
-			data[i++] = (byte)c;
-			if( cnt++ == 0 ) {
-				c1 = c;
-				if( c1 == '1' ) {
-					log.info("Sending protocol 1 login");
-					os.write("-----BEGIN RSA PUBLIC KEY-----\r\n".getBytes());
-					os.write("MIGJAoGBAK57uDy5++qDXH0EjQzcTC4Ug+1X3J3VRM2HTixcj8GKPI0PCK0n0CFwpfdb/k9S7Sfn\r\n".getBytes());
-					os.write("gceBIqHIbrbi21dxSOelM+e9bpXJEFRgeaJ1l3ba2/oOoS3QdB90jpJQmh/AHq1FItc+7Qq8en8k\r\n".getBytes());
-					os.write("DiOKbOeoB7NF3cWNp60L57jRbjzvAgMBAAE=\r\n".getBytes());
+		try (is; os) {
+			byte[]data = new byte[400];
+			int c;
+			int i = 0;
+			int c1 = 0, c2, cnt = 0;
+			while( ( c = is.read() ) != 0xAC ) {
+				log.log(Level.FINE, "Callsign Read: ({0})''{1}''", new Object[]{c, (char)c});
+				if( c == -1 )
+					throw new EOFException("Premature EOF" );
+				data[i++] = (byte)c;
+				if( cnt++ == 0 ) {
+					c1 = c;
+					if( c1 == '1' ) {
+						log.info("Sending protocol 1 login");
+						os.write("-----BEGIN RSA PUBLIC KEY-----\r\n".getBytes());
+						os.write("MIGJAoGBAK57uDy5++qDXH0EjQzcTC4Ug+1X3J3VRM2HTixcj8GKPI0PCK0n0CFwpfdb/k9S7Sfn\r\n".getBytes());
+						os.write("gceBIqHIbrbi21dxSOelM+e9bpXJEFRgeaJ1l3ba2/oOoS3QdB90jpJQmh/AHq1FItc+7Qq8en8k\r\n".getBytes());
+						os.write("DiOKbOeoB7NF3cWNp60L57jRbjzvAgMBAAE=\r\n".getBytes());
+					}
+				} else if( cnt == 2 ) {
+					c2 = c;
+					if( c1 == '1' && c2 == '?' ) {
+						os.write('N');
+						os.flush();
+						i = 0;
+					}
 				}
-			} else if( cnt == 2 ) {
-				c2 = c;
-				if( c1 == '1' && c2 == '?' ) {
-					os.write('N');
-					os.flush();
-					i = 0;
-				}
-			}
-		}
-
-		String call = new String(data,0,i);
-		log.fine("Read end of callsign");
-		if( is.read() != 0xAC )
-			throw new IOException("Missing second 0xAC after call");
-
-		i = 0;
-		log.fine( "reading password");
-		while( ( c = is.read() ) != 0xd ) {
-			if( c == -1 )
-				throw new EOFException("Premature EOF" );
-			data[i++] = (byte)c;
-		}
-		String passwd = new String(data,0,i);
-		
-		log.fine( "reading info");
-		i = 0;
-		while( ( c = is.read() ) != 0xd ) {
-			if( c == -1 )
-				throw new EOFException("Premature EOF" );
-			data[i++] = (byte)c;
-		}
-		String info = new String(data,0,i);
-		
-		log.fine( "reading location");
-		i = 0;
-		while( ( c = is.read() ) != 0xd ) {
-			if( c == -1 )
-				throw new EOFException("Premature EOF" );
-			data[i++] = (byte)c;
-		}
-		String location = new String(data,0,i);
-		
-		log.fine("Looking for port("+withPort+")" );
-		int port = 5198;
-		s.setSoTimeout( 2000 );
-		if( withPort && (c = is.read()) != -1 ) {
+			}	String call = new String(data,0,i);
+			log.fine("Read end of callsign");
+			if( is.read() != 0xAC )
+				throw new IOException("Missing second 0xAC after call");
 			i = 0;
-			data[i++] = (byte)c;
-			log.fine( "port might exist: "+(char)c);
+			log.fine( "reading password");
 			while( ( c = is.read() ) != 0xd ) {
 				if( c == -1 )
 					throw new EOFException("Premature EOF" );
 				data[i++] = (byte)c;
-			}
-			String portno = new String(data,0,i);
-			log.info("read port: "+portno );
-			try {
-				port = Integer.parseInt( portno );
-			} catch( Exception ex ) {
-				log.info("Read: "+portno+" instead of port number");
-				log.log( Level.FINE, ex.toString(), ex );
-			}
+			}	String passwd = new String(data,0,i);
+			log.fine( "reading info");
+			i = 0;
+			while( ( c = is.read() ) != 0xd ) {
+				if( c == -1 )
+					throw new EOFException("Premature EOF" );
+				data[i++] = (byte)c;
+			}	String info = new String(data,0,i);
+			log.fine( "reading location");
+			i = 0;
+			while( ( c = is.read() ) != 0xd ) {
+				if( c == -1 )
+					throw new EOFException("Premature EOF" );
+				data[i++] = (byte)c;
+			}	String location = new String(data,0,i);
+			log.log(Level.FINE, "Looking for port({0})", withPort);
+			port = 5198;
+			s.setSoTimeout( 2000 );
+			if( withPort && (c = is.read()) != -1 ) {
+				i = 0;
+				data[i++] = (byte)c;
+				log.log(Level.FINE, "port might exist: {0}", (char)c);
+				while( ( c = is.read() ) != 0xd ) {
+					if( c == -1 )
+						throw new EOFException("Premature EOF" );
+					data[i++] = (byte)c;
+				}
+				String portno = new String(data,0,i);
+				log.log(Level.INFO, "read port: {0}", portno);
+				try {
+					port = Integer.parseInt( portno );
+				} catch( NumberFormatException ex ) {
+					log.log(Level.INFO, "Read: {0} instead of port number", portno);
+					log.log( Level.FINE, ex.toString(), ex );
+				}
+			}	log.log(Level.INFO, "Read data: {0}, pass: {1}, info: {2}, loc: {3}", new Object[]{call, passwd, info, location});
+			registerLogin( call, passwd, info, location, s.getInetAddress(), port );
+			os.write("OK".getBytes());
 		}
-
-		log.info("Read data: "+call+", pass: "+passwd+", info: "+ info+", loc: "+location );
-
-		registerLogin( call, passwd, info, location, s.getInetAddress(), port );
-		os.write("OK".getBytes());
-		os.close();
-		is.close();
 		s.close();
 	}
 
 	private void registerLogin( String user, String passwd, 
 					String info, String loc, InetAddress sock, int port ) {
 		StationInfo si = stationExists( user, passwd );
-		log.info("register login (si="+si+") "+sock+"? "+byaddr.get(sock) );
+		log.log(Level.INFO, "register login (si={0}) {1}? {2}", new Object[]{si, sock, byaddr.get(sock)});
 		if( si == null || si.isPending() ) {
 			si = stationFor( user );
-			log.info("login station ("+user+")? "+si );
+			log.log(Level.INFO, "login station ({0})? {1}", new Object[]{user, si});
 			if( si != null ) {
-				log.info("Setting reason to: "+si.reason );
+				log.log(Level.INFO, "Setting reason to: {0}", si.reason);
 				reasons.put( sock, new String[] { si.reason } );
 				byaddr.remove( sock );
 				si.setPort( port );
@@ -560,13 +551,13 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 						"is not recognized.  Please",
 						"check to make sure the correct",
 						"username was specified."});
-					log.info("Unknown user: "+user);
-					pendlist.addElement( si );
+					log.log(Level.INFO, "Unknown user: {0}", user);
+					pendlist.add( si );
 					si.reason = "Authorization Pending";
 					si.setPending(true);
-					plst.setListData( pendlist );
+					pends.setListData( pendlist );
 				} else {
-					log.info("Pending user: "+user);
+					log.log(Level.INFO, "Pending user: {0}", user);
 				}
 			}
 			return;
@@ -593,36 +584,32 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		reasons.remove( sock );
 		connected.put(si.user,si);
 		byaddr.put( sock, si );
-		runInSwing( new Runnable() {
-			public void run() { 
-				lst.setListData( statlist );
-				lst.repaint();
-			}
+		runInSwing(() -> {
+			stats.setListData( statlist );
+			lst.repaint();
 		});
 	}
 
-	private void addStation( String user, String pass, int id, int port ) {
-		StationInfo s = new StationInfo( user, pass, id, port );
-		addStation(s);
-	}
+//	private void addStation( String user, String pass, int id, int port ) {
+//		StationInfo s = new StationInfo( user, pass, id, port );
+//		addStation(s);
+//	}
 	
 	private void addStation( final StationInfo s ) {
 		stations.put( s.user, s );
 		saveStations();
-		runInSwing( new Runnable() {
-			public void run() { 
-				statlist.addElement( s );
-				lst.setListData( statlist );
-				lst.repaint();
-			}
+		runInSwing(() -> {
+			statlist.add( s );
+			stats.setListData( statlist );
+			lst.repaint();
 		});
 	}
 
 	private void deleteStation( final StationInfo inf ) {
 		stations.remove( inf.user );
-		statlist.removeElement( inf );
-		rejlist.removeElement(inf);
-		pendlist.removeElement(inf);
+		statlist.remove( inf );
+		rejlist.remove(inf);
+		pendlist.remove(inf);
 		discoStation( inf );
 	}
 
@@ -633,12 +620,10 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 			reasons.remove( inf.addr );
 			connected.remove( inf.user );
 		}
-		runInSwing( new Runnable() {
-			public void run() { 
-				inf.addr = null;
-				lst.setListData( statlist );
-				lst.repaint();
-			}
+		runInSwing(() -> {
+			inf.addr = null;
+			stats.setListData( statlist );
+			lst.repaint();
 		});
 	}
 	
@@ -652,12 +637,15 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 			FileOutputStream fo = new FileOutputStream( f );
 			try {
 				ObjectOutputStream os = new ObjectOutputStream(fo);
-				os.writeInt(1);
-				os.writeObject( stations );
-				os.writeObject( statlist );
-				os.writeObject( pendlist );
-				os.writeObject( rejlist );
-				os.close();
+				try {
+					os.writeInt(1);
+					os.writeObject( stations );
+					os.writeObject( statlist );
+					os.writeObject( pendlist );
+					os.writeObject( rejlist );
+				} finally {
+					os.close();
+				}
 			} finally {
 				fo.close();
 			}
@@ -679,19 +667,19 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 				ObjectInputStream is = new ObjectInputStream( fi );
 				int v = is.readInt();
 				HashtableReader<String,StationInfo> hr = 
-					new HashtableReader<String,StationInfo>(is);
+					new HashtableReader<>(is);
 				stations = hr.read();
-				VectorReader<StationInfo> vr = new VectorReader<StationInfo>();
+				VectorReader<StationInfo> vr = new VectorReader<>();
 				statlist = vr.read(is);
 				pendlist = vr.read(is);
 				rejlist = vr.read(is);
-				Enumeration<StationInfo>e = stations.elements();
-				while( e.hasMoreElements() ) {
-					StationInfo si = e.nextElement();
+				Iterator<StationInfo>e = stations.values().iterator();
+				while( e.hasNext() ) {
+					StationInfo si = e.next();
 					if( !statlist.contains(si) &&
 						!pendlist.contains(si) &&
 						!rejlist.contains(si) ) {
-						log.info("deleting lost station: "+si );
+						log.log(Level.INFO, "deleting lost station: {0}", si);
 						deleteStation(si);
 					}
 					si.addr = null;
@@ -699,13 +687,14 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 					si.lastTime = 0;
 //					statlist.addElement(e.nextElement());
 				}
-				lst.setListData( statlist );
-				plst.setListData( pendlist );
-				rlst.setListData( rejlist );
+				stats.setListData( statlist );
+				pends.setListData( pendlist );
+				rejs.setListData( rejlist );
+				is.close();
 			} finally {
 				fi.close();
 			}
-		} catch( Exception ex ) {
+		} catch( IOException | ClassNotFoundException ex ) {
 			log.log(Level.SEVERE, ex.toString(), ex );
 		}
 	}
@@ -727,17 +716,20 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		public void setPort( int p ) {
 			port = p;
 		}
+		@Override
 		public boolean equals( Object obj ) {
 			if( obj instanceof StationInfo == false )
 				return false;
 			return user.equals( ((StationInfo)obj).user );
 		}
+		@Override
 		public int hashCode() {
 			return user.hashCode();
 		}
 		public void setConnected( boolean how ) {
 			connected = how;
 		}
+		@Override
 		public String toString() {
 			String str = user;
 			if( pending )
@@ -757,7 +749,7 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 			this.passwd = passwd;
 			this.id = id;
 			this.port = port;
-			log.fine("Constructing: "+user+", id: "+id+", port: "+port );
+			log.log(Level.FINE, "Constructing: {0}, id: {1}, port: {2}", new Object[]{user, id, port});
 		}
 		public void setAddress( InetAddress addr ) {
 			this.addr = addr;
@@ -771,7 +763,8 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 		} else {
 			try {
 				SwingUtilities.invokeAndWait( r );
-			} catch( Exception ex ) {
+			} catch( InterruptedException | InvocationTargetException ex ) {
+				log.log(Level.SEVERE,ex.toString(), ex);
 			}
 		}
 	}
@@ -798,7 +791,7 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 			return 
 			si;
 		}
-		log.info( "Wrong passwd for: "+user+": \""+si.passwd+"\" <> \""+passwd+"\"" );
+		log.log(Level.INFO, "Wrong passwd for: {0}: \"{1}\" <> \"{2}\"", new Object[]{user, si.passwd, passwd});
 		si.reason = "Incorrect password";
 		return null;
 	}
@@ -817,7 +810,7 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 	}
 	
 	private boolean isConnected( InetAddress addr ) {
-		log.info("Check connected "+addr+"? "+byaddr.get(addr) );
+		log.log(Level.INFO, "Check connected {0}? {1}", new Object[]{addr, byaddr.get(addr)});
 		return byaddr.get(addr) != null;
 	}
 	
@@ -834,50 +827,57 @@ public class EcholinkServerImpl extends PersistentJiniService implements Echolin
 
 	private void listStations( InputStream is, 
 				OutputStream os, Socket sock ) throws IOException {
-		log.info(sock+": list stations");
+		log.log(Level.INFO, "{0}: list stations", sock);
 		if( isConnected( sock.getInetAddress() ) == false ) {
-			log.info(sock+": is not connected: "+
-				stationFor(sock.getInetAddress()) );
-			StationInfo si = stationFor( sock.getInetAddress() );
-			os.write(( "@@@\r").getBytes() );
-			String []res = (String[])reasons.get(sock.getInetAddress());
-			if( res == null )
-				res = new String[] { "Not connected" };
-			writeMessages( os, res );
-			os.close();
+			log.log(Level.INFO, "{0}: is not connected: {1}", new Object[]{sock, stationFor(sock.getInetAddress())});
+//			StationInfo si = stationFor( sock.getInetAddress() );
+			try {
+				os.write(( "@@@\r").getBytes() );
+				String []res = (String[])reasons.get(sock.getInetAddress());
+				if( res == null )
+					res = new String[] { "Not connected" };
+				writeMessages( os, res );
+			} finally {
+				os.close();
+				is.close();
+				sock.close();
+			}
 			return;
 		}
-//		writeln( os, "OK" );
-		os.write("@@@\r".getBytes());
-		writeln(os,""+connected.size() );
-		Enumeration e = connected.elements();
-		while( e.hasMoreElements() ) {
-			StationInfo si = (StationInfo)e.nextElement();
-			writeln( os, si.user );
-//			"\015"+(conn ? "BUSY" : "ONLINE")+Javecho.myVersion()+"J(" +
-//			sf.format( c.getTime() ) +
-//			")\015"
-			String which = "OFF";
-			if( si.info.startsWith( "BUSY" ) )
-				which = "BUSY";
-			else if(si.info.startsWith("ONLINE") )
-				which = "ON";
-			int id1 = si.info.indexOf( "(" );
-			int id2 = si.info.indexOf( ")" );
-			String hr = si.info.substring( id1+1, id2 );
-			String info = si.loc;
-			if( info.length() > 28 )
-				info = info.substring(0,28);
-			else {
-				info = info + 
-					"                            ".substring(info.length());
+		try {
+//			writeln( os, "OK" );
+			os.write("@@@\r".getBytes());
+			writeln(os,""+connected.size() );
+			Iterator<StationInfo> e = connected.values().iterator();
+			while( e.hasNext() ) {
+				StationInfo si = e.next();
+				writeln( os, si.user );
+//					"\015"+(conn ? "BUSY" : "ONLINE")+Javecho.myVersion()+"J(" +
+//					sf.format( c.getTime() ) +
+//					")\015"
+				String which = "OFF";
+				if( si.info.startsWith( "BUSY" ) )
+					which = "BUSY";
+				else if(si.info.startsWith("ONLINE") )
+					which = "ON";
+				int id1 = si.info.indexOf( "(" );
+				int id2 = si.info.indexOf( ")" );
+				String hr = si.info.substring( id1+1, id2 );
+				String info = si.loc;
+				if( info.length() > 28 )
+					info = info.substring(0,28);
+				else {
+					info = info + 
+						"                            ".substring(info.length());
+				}
+				writeln( os, info+"["+which+" "+hr+"] : "+si.port );
+				writeln( os, si.id+"" );
+				writeln( os, si.addr.getHostAddress() );
 			}
-			writeln( os, info+"["+which+" "+hr+"] : "+si.port );
-			writeln( os, si.id+"" );
-			writeln( os, si.addr.getHostAddress() );
+		} finally {
+			os.close();
+			is.close();
+			sock.close();
 		}
-		os.close();
-		is.close();
-		sock.close();
 	}
 }

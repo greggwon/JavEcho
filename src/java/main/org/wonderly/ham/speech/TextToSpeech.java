@@ -7,7 +7,7 @@ import java.util.*;
 import java.security.*;
 import java.util.logging.*;
 
-import com.sun.speech.freetts.jsapi.FreeTTSEngineCentral;
+import com.sun.speech.freetts.jsapi.*;
 
 public class TextToSpeech {
     Synthesizer synth = null; 

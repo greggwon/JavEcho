@@ -43,17 +43,14 @@ public class FFT {
 	private int gFFTBitTable[][];
 	final int MaxFastBits = 16;
 
-	private final boolean IsPowerOfTwo(int x) {
+	private boolean IsPowerOfTwo(int x) {
 		if (x < 2)
 			return false;
 
-		if ( (x & (x - 1)) != 0)
-			return false;
-
-		return true;
+		return (x & (x - 1)) == 0;
 	}
 
-	private final int NumberOfBitsNeeded(int PowerOfTwo) {
+	private int NumberOfBitsNeeded(int PowerOfTwo) {
 		int i;
 
 		if (PowerOfTwo < 2) {
@@ -66,7 +63,7 @@ public class FFT {
 		}
 	}
 
-	private final int ReverseBits(int index, int NumBits) {
+	private int ReverseBits(int index, int NumBits) {
 		int i, rev;
 
 		for (i = rev = 0; i < NumBits; i++) {
@@ -77,7 +74,7 @@ public class FFT {
 		return rev;
 	}
 
-	private final void InitFFT() {
+	private void InitFFT() {
 		gFFTBitTable = new int [MaxFastBits][];
 
 		int len = 2;
@@ -92,7 +89,7 @@ public class FFT {
 		}
 	}
 
-	private final int FastReverseBits(int i, int NumBits) {
+	private int FastReverseBits(int i, int NumBits) {
 		if (NumBits <= MaxFastBits)
 			return gFFTBitTable[NumBits - 1][i];
 		else
@@ -108,6 +105,12 @@ public class FFT {
 
 	/**
 	 * Compute complex Fast Fourier Transform
+	 * @param NumSamples
+	 * @param InverseTransform
+	 * @param RealIn
+	 * @param ImagIn
+	 * @param RealOut
+	 * @param ImagOut
 	 */
 	public void compute( int NumSamples, boolean InverseTransform, 
 		  float []RealIn, float []ImagIn, float []RealOut, float []ImagOut ) {
@@ -341,7 +344,7 @@ public class FFT {
 	 */
 	public enum WindowFunc { RECTANGULAR, BARTLETT, HAMMING, HANNING };
 	
-	private final String WindowFuncName(WindowFunc whichFunction) {
+	private String WindowFuncName(WindowFunc whichFunction) {
 		switch (whichFunction) {
 		case RECTANGULAR:
 			return "Rectangular";

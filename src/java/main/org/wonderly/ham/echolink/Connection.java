@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 import org.wonderly.ham.echolink.LinkEvent.LinkMode;
 
-import sun.rmi.runtime.Log;
+import java.util.logging.*;
 
 import java.text.*;
 
@@ -16,33 +16,37 @@ import java.text.*;
  *  This class encompasses a Connection to another remote station.
  */
 public class Connection extends TimerTask implements MulticastServer,TimedConnectionHost {
-	private InetSocketAddress statusAddr;
-	private InetSocketAddress voiceAddr;
-	private Javecho je;
-	private String addr;
-	private Parameters pr;
-	private RTPacket rtpk;
-	private RTPacket byepk;
-	private int sdesLen, byeLen;
+	private final InetSocketAddress statusAddr;
+	private final InetSocketAddress voiceAddr;
+	private final Javecho je;
+	private final String addr;
+	private final Parameters pr;
+	private final RTPacket rtpk;
+	private final RTPacket byepk;
+	private int sdesLen;
+	private final int byeLen;
 	private byte[]sdesPacket;
-	private byte[]byePacket;
+	private final byte[]byePacket;
 	private boolean heard;
 	private int heardCnt = 0;
 	private long accIdle;
-	private String name;
-	private ConnectionManager mgr;
-	private int timeIntv = 8000;
+	private final String name;
+	private final ConnectionManager mgr;
+	private final int timeIntv = 8000;
 	private boolean connPend;
-	private int data, ctrl;
+	private final int data;
+	private final int ctrl;
 	private boolean trans;
 	private boolean discPend;
 	private MulticastSocket multi;
 	private static final Logger log = Logger.getLogger( Connection.class.getName() );
 
+	@Override
 	public void setMulticastSocket( MulticastSocket sock ) {
 		multi = sock;
 	}
 
+	@Override
 	public boolean disconnected() {
 		return discPend;
 	}
@@ -73,13 +77,16 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 	public void setTrans( boolean how ) {
 		trans = how;
 	}
+	@Override
 	public String getAddr() {
 		return addr;
 	}
+	@Override
 	public String toString() {
 		return name+" ("+addr+")";
 	}
 
+	@Override
 	public void setHeard( boolean how ) {
 		heard = how;
 		accIdle = 0;
@@ -119,28 +126,28 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 		mgr.timer.schedule( this, timeIntv, timeIntv );
 	}
 	public void buildSdes(String page) {
-		sdesLen = rtpk.make_sdes( addr, true, "J"+Javecho.version, page, "CALLSIGN" );
+		sdesLen = rtpk.make_sdes( addr, true, "J"+Javecho.VERSION, page, "CALLSIGN" );
 		sdesPacket = rtpk.getPacketData();
 	}
 	public void sendChat( byte[]arr ) throws IOException {
 		mgr.ep.sendChatData( arr, voiceAddr );
-		LinkEvent<Number> le = new LinkEvent<Number>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	public void sendInfo( byte[]arr ) throws IOException {
 		mgr.ep.sendData( arr, voiceAddr );
-		LinkEvent<Number> le = new LinkEvent<Number>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<>( arr, true, LinkMode.INFO_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendConnData() throws IOException {
 //			new Throwable("Send connData").printStackTrace();
 		mgr.ep.sendData( sdesPacket, statusAddr );
-		LinkEvent<Number> le = new LinkEvent<Number>( sdesPacket, true, LinkMode.CONN_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<>( sdesPacket, true, LinkMode.CONN_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendByeData() throws IOException {
 		mgr.ep.sendData( byePacket, statusAddr );
-		LinkEvent<Number> le = new LinkEvent<Number>( addr, true, LinkMode.DISC_EVENT, mgr.seq );
+		LinkEvent<Number> le = new LinkEvent<>( addr, true, LinkMode.DISC_EVENT, mgr.seq );
 		je.sendEvent( le );
 	}
 	void sendVoiceData( byte[]data ) throws IOException {
@@ -157,6 +164,7 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 		cancel();
 		mgr.progress( this+": disconnected" );
 	}
+	@Override
 	public void run() {
 //			progress(addr+": timer entry (heard="+heard+"): "+heardCnt );
 		if( !heard ) {
@@ -172,7 +180,7 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 					cancel();
 					return;
 				}
-			} catch(Exception ex ) {
+			} catch(IOException | RuntimeException ex ) {
 				log.log(Level.SEVERE, ex.toString(), ex);
 			}
 		}
@@ -182,11 +190,11 @@ public class Connection extends TimerTask implements MulticastServer,TimedConnec
 		try {
 			heard = false;
 			sendConnData();
-		} catch( Exception ex ) {
-			ex.printStackTrace();
+		} catch( IOException | RuntimeException ex ) {
+			log.log(Level.SEVERE, "Cannot send Sdes packet: "+ex.toString(), ex);
 			try {
 				mgr.shutdownStream( this );
-			} catch( Exception exx ) {
+			} catch( IOException | RuntimeException  exx ) {
 				log.log(Level.SEVERE, exx.toString(), exx);
 			}
 			cancel();

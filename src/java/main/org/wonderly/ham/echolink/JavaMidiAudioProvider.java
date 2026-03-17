@@ -194,8 +194,8 @@ public class JavaMidiAudioProvider implements AudioProvider {
 	
 	public JComponent getEditor() {
 		JPanel p = new JPanel();
-		Packer pk = new Packer();
-		
+		Packer pk = new Packer(p);
+		pk.pack( new JLabel("Should be an editor"));
 		return p;
 	}
 

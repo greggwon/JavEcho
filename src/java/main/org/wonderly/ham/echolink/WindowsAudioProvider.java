@@ -100,7 +100,7 @@ public class WindowsAudioProvider implements AudioProvider {
 	
 	public JComponent getEditor() {
 		JPanel p = new JPanel();
-		Packer pk = new Packer();
+		Packer pk = new Packer(p);
 		
 		return p;
 	}

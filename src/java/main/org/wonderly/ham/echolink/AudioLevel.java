@@ -3,7 +3,6 @@ package org.wonderly.ham.echolink;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.*;
-import java.awt.event.*;
 
 import java.util.logging.*;
 
@@ -20,10 +19,10 @@ public class AudioLevel extends JPanel {
 	CardLayout cards;
 	JPanel cardp;
 	Javecho je;
-	Logger log = Logger.getLogger( getClass().getName() );
+	static final Logger log = Logger.getLogger( AudioLevel.class.getName() );
 
 	public void setVox( boolean how ) {
-		log.info("Vox receive: "+how );
+		log.log(Level.INFO, "Vox receive: {0}", how);
 		try {
 			if(how) {
 				je.setMode(LinkMode.MODE_SYSOPRECEIVE);
@@ -59,17 +58,17 @@ public class AudioLevel extends JPanel {
 		setOpaque(false);
 //			bp.setOpaque(true);
 //			bp.setBackground( getBackground() );
-		log.fine("initial vox limit: "+je.pr.getVoxLimit());
+		log.log(Level.FINE, "initial vox limit: {0}", je.getParms().getVoxLimit());
 		JPanel vp = new JPanel();
 		vp.setOpaque(false);
 		Packer vpk = new Packer(vp);
 
-		final JLabel voxVal = new JLabel(je.pr.getVoxLimit()+"");
+		final JLabel voxVal = new JLabel(je.getParms().getVoxLimit()+"");
 		voxVal.setOpaque(false);
 		volVal.setBorder(BorderFactory.createLoweredBevelBorder());
 		voxVal.setBorder(BorderFactory.createLoweredBevelBorder());
 
-		vox = new JSlider( 0, 3200, je.pr.getVoxLimit() );
+		vox = new JSlider( 0, 3200, je.getParms().getVoxLimit() );
 		vox.setOpaque(false);
 		vox.setMajorTickSpacing(100);
 		vox.setPaintTicks(true);
@@ -78,13 +77,11 @@ public class AudioLevel extends JPanel {
 		cardp.add( "vox", vp );
 //			vox.setShowValue(true);
 		
-		vox.addChangeListener( new ChangeListener() {
-			public void stateChanged( ChangeEvent ev ) {
-				int val = vox.getValue();
-				log.fine("update vox limit: "+val);
-				je.pr.setVoxLimit( val );
-				voxVal.setText( val+"" );
-			}
+		vox.addChangeListener((ChangeEvent ev) -> {
+			int val = vox.getValue();
+			log.log(Level.FINE, "update vox limit: {0}", val);
+			je.getParms().setVoxLimit( val );
+			voxVal.setText( val+"" );
 		});
 		b.setBorder(null);
 	}
@@ -98,7 +95,7 @@ public class AudioLevel extends JPanel {
 		this.maximum = max;
 	}
 	
-	JProgressBar createBar(int low, int high) {
+	final JProgressBar createBar(int low, int high) {
 		return new JProgressBar( low, high ) {
 			public void paintComponent( Graphics g ) {
 				Graphics2D g2 = (Graphics2D)g;

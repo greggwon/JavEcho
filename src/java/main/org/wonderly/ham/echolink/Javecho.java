@@ -1,156 +1,36 @@
 package org.wonderly.ham.echolink;
 
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.SystemColor;
-import java.awt.Toolkit;
-import java.awt.Window;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.dnd.DragGestureEvent;
-import java.awt.dnd.DragGestureListener;
-import java.awt.dnd.DragGestureRecognizer;
-import java.awt.dnd.DragSource;
-import java.awt.dnd.DragSourceDragEvent;
-import java.awt.dnd.DragSourceDropEvent;
-import java.awt.dnd.DragSourceEvent;
-import java.awt.dnd.DragSourceListener;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetAdapter;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.BindException;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.NoRouteToHostException;
-import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
+import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
+import java.awt.event.*;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.net.*;
+import java.text.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
-import java.util.TimerTask;
-import java.util.TooManyListenersException;
-import java.util.Vector;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 import java.util.prefs.Preferences;
-import javax.comm.CommPortIdentifier;
-import javax.comm.SerialPort;
-import javax.comm.SerialPortEvent;
-import javax.comm.SerialPortEventListener;
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Control;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.ActionMap;
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JEditorPane;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSlider;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
-import javax.swing.JToolBar;
-import javax.swing.JTree;
-import javax.swing.KeyStroke;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.TreeModelEvent;
-import javax.swing.event.TreeModelListener;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.JTextComponent;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-import org.wonderly.awt.Packer;
-import org.wonderly.ham.MorseControl;
+import gnu.io.*;
+//import javax.comm.*;
+
+import javax.sound.sampled.*;
+import javax.swing.*;
+import javax.swing.tree.*;
+import javax.swing.border.*;
+import javax.swing.event.*;
+import javax.swing.filechooser.*;
+import javax.swing.text.*;
+import org.wonderly.awt.*;
+import org.wonderly.ham.*;
 import org.wonderly.ham.audio.AudioMorseSender;
 import org.wonderly.ham.echolink.LinkEvent.LinkMode;
-import org.wonderly.io.HashtableReader;
-import org.wonderly.io.VectorReader;
+import org.wonderly.io.*;
 import org.wonderly.logging.SimpleFormatter;
 import org.wonderly.swing.*;
-import org.wonderly.swing.net.HTMLBrowser;
-import org.wonderly.swing.net.PageEvent;
-import org.wonderly.swing.net.PageListener;
+import org.wonderly.swing.net.*;
+import org.wonderly.ham.echolink.ui.*;
 
 /**
  * This is the main class for the
@@ -159,52 +39,52 @@ import org.wonderly.swing.net.PageListener;
  *
  * <dl>
  * <dt><b>Logger: </b>
- * <dd><code>org.wonderly.ham.echolink<code><br>
+ * <dd><code>org.wonderly.ham.echolink</code><br>
  * <dt>Properties:<dd>Used by logger
  * <dt><b>log file name</b><dd><code>org.wonderly.ham.echolink.log.file</code>
  * <dt>
  * <dd><code>${user.home}/.javecho/javecho.log.%g</code>
  * <dt><b>log files sizes</b>
- * <dd><code>org.wonderly.ham.echolink.log.size<code><br>
+ * <dd><code>org.wonderly.ham.echolink.log.size</code><br>
  * <dt><b>log files count</b>
- * <dd><code>org.wonderly.ham.echolink.log.count<code><br>
+ * <dd><code>org.wonderly.ham.echolink.log.count</code><br>
  * </dl>
  */
-public class Javecho extends JFrame implements ExceptionHandler {
+public final class Javecho extends JFrame implements ExceptionHandler {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	/** Access to the echolink login server operations */
 	private volatile ServerAccess acc;
-	public static final String version = Version.version;
+	public static final String VERSION = Version.version;
 	/** The station list of all connected stations */
 	private List<Entry> staList;
 	/** The station list of all friend locations */
 	private List<Entry> frList;
 	/** The trees of various views of the station data */
-	private JTree stations, favorites, lastSelTree, locations;
+	private volatile JTree stations, favorites, lastSelTree, locations;
 	/** Tree models for all stations and friends trees */
 	private MyModel trmod, frmod;
 	/** All locations model which includes support for country etc trees */
 	private MyLocModel locmod;
 	/** The list info.txt display area */
-	private JTextArea statList;
+	private final JTextArea statList;
 	/** The users persistent preferences */
-	private Preferences prefs;
+	private volatile Preferences prefs;
 	/** The connected station label */
-	private JLabel conn;
+	private final JLabel conn;
 	/** The tabbed pane of station lists */
-	private JTabbedPane stTabs;
+	private final JTabbedPane stTabs;
 	/** The connection manager provides access to the control of connections */
 	volatile ConnectionManager ssa;
-	private JLabel last;
-	private JLabel ipaddr;
+	private final JLabel last;
+	private final JLabel ipaddr;
 	private static JLabel stinfo, oinfo;
-	private JPanel idPan;
-	private JButton msgSend;
-	private JEditorPane msgPane;
-	private JTextArea infoPane;
+	private final JPanel idPan;
+	private final JButton msgSend;
+	private final JEditorPane msgPane;
+	private final JTextArea infoPane;
 	private boolean enableSysopMode = false;
 	/** Announces the connection and disconnection etc. */
 	private volatile Announcer ann;
@@ -220,7 +100,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/** The TX indicator, a disabled button */
 	private JButton txbut;
 	/** Programatic parameters */
-	static Parameters pr;
+	private Parameters pr;
 	/** The actions supported inside the GUI */
 	private Map<String, Action> actions = new HashMap<String, Action>();
 	public static String oneAddress; // Set this to an IP address for
@@ -241,24 +121,22 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	JPanel gainPan;
 	/** Volume mute control */
 	private JCheckBox volMute;
-	/** Border on gain control */
-	private TitledBorder gainBorder;
 	private JLabel gainVal;
-	/** Drag source for callsign drag and drop */
+	/** Drag source for call sign drag and drop */
 	private DragSource dgs;
 	/**
 	 * The lines of text returned from the connection event by the echolink
 	 * servers
 	 */
-	private List<Entry> sysmsg = new Vector<Entry>();
+	private List<Entry> sysmsg = new ArrayList<>();
 	/** Implementation of audio tones for event notification */
 	AudioProvider audio;
 	private java.util.Timer timer = new java.util.Timer();
 	private URL currentURL;
 	/** List of stations we have contacted */
-	private Map<String, String> contacts = new HashMap<String, String>();
+	private Map<String, String> contacts = new HashMap<>();
 	/** Web page stack of urls */
-	private Stack<URL> urls = new Stack<URL>();
+	private Stack<URL> urls = new Stack<>();
 	private JPanel controls;
 	/** The message text output component */
 	private JEditorPane msgData;
@@ -275,27 +153,28 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	private StationIDManager statid;
 	/** Control of the station by received PTT tones */
-	private SysopRecvAvailControl sysopPtt;
+	private volatile SysopRecvAvailControl sysopPtt;
 
 	/** Various labels of status text and progress indication */
-	private JLabel rxstat;
-	private JLabel txstat;
-	private JLabel netstat;
-	private JLabel xtime;
-	private JPanel inpan;
-	private JLabel rcvSerialCD, rcvSerialDSR, rcvSerialCTS;
+	private final JLabel rxstat;
+	private final JLabel txstat;
+	private final JLabel netstat;
+	private final JLabel xtime;
+	private final JPanel inpan;
+	private final JLabel rcvSerialCD, rcvSerialDSR, rcvSerialCTS;
 	// private volatile int sDtI, sCtlI, rDtI, rMisI, rSeqI, rCtlI;
-	private JLabel sDt, sCtl, rDt, rMis, rSeq, rCtl;
+	//private JLabel sDt, sCtl, rDt, rMis, rSeq, rCtl;
 
-	LinkMode lastmode = LinkMode.NONE;
-	TimerTask txcnt;
-	long txtime;
-	private DragGestureRecognizer fdgr;
-	private DragGestureRecognizer sdgr;
-	private DropTarget dt;
-	private DragGestureRecognizer flgr;
-	private JSlider micGainSlider;
-	private ControlRangeModel mcrm;
+	volatile LinkMode lastmode = LinkMode.NONE;
+	volatile TimerTask txcnt;
+	volatile long txtime;
+	private final DragGestureRecognizer stldg;
+	private final DragGestureRecognizer fdgr;
+	private final DragGestureRecognizer sdgr;
+	private final DropTarget dt;
+	private final DragGestureRecognizer flgr;
+	private volatile JSlider micGainSlider;
+	private volatile ControlRangeModel mcrm;
 
 	/**
 	 * Get the ServerAccess instance that is active
@@ -305,9 +184,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	/**
-	 * A control point for managing the ability to perform sysop operations.
-	 * This is currently just used to manage debugging of sysop mode without
-	 * enabling it for general use.
+	 * A control point for managing the ability to perform sysop operations.This is currently just 
+	 * used to manage debugging of sysop mode without enabling it for general use.
+	 * @return
 	 */
 	public boolean isSysopModeAvailable() {
 		return enableSysopMode;
@@ -315,6 +194,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Get the list of all known stations
+	 * @return 
 	 */
 	public List<Entry> getStationList() {
 		return staList;
@@ -322,6 +202,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Get the statistics associated with the current connection.
+	 * @return 
 	 */
 	public ConnectionStatistics getConnectionStats() {
 		return cons;
@@ -341,6 +222,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Add a listener to receive notification of requested audio events.
+	 * @param lis
 	 */
 	public void addAudioEventListener(AudioEventListener lis) {
 		if (ssa != null)
@@ -349,6 +231,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the speed that morse IDs and other morse code should be sent
+	 * @param val
 	 */
 	public void setMorseWPM(int val) {
 		ms.setWordRate(val);
@@ -358,6 +241,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the pitch to use for morse code.
+	 * @param freqHz
 	 */
 	public void setMorseIdFreq(int freqHz) throws UnsupportedOperationException {
 		ms.setPitchFreq(freqHz);
@@ -365,6 +249,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the volume level for the morse ID
+	 * @param db
+	 * @throws java.io.IOException
 	 */
 	public void setMorseIdVolume(int db) throws IOException {
 		ms.setVolumeLevelDb(db);
@@ -372,10 +258,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Send the indicated string out in morse code
+	 * @param pttCtl
+	 * @param str
+	 * @throws java.io.IOException
 	 */
 	public void sendMorse(PTTControlParms pttCtl, String str) throws IOException {
-		log.info("Send morse code: \"" + str + "\"" + ", pitch: " + pr.getIdentMorsePitch() + ", vol: "
-				+ pr.getIdentMorseVolume() + ", spd: " + pr.getIdentMorseSpeed());
+		log.log(Level.INFO, "Send morse code: \"{0}\", pitch: {1}, vol: {2}, spd: {3}", new Object[]{str, pr.getIdentMorsePitch(), pr.getIdentMorseVolume(), pr.getIdentMorseSpeed()});
 		ms.setPitchFreq(pr.getIdentMorsePitch());
 		ms.setVolumeLevelDb(pr.getIdentMorseVolume());
 		setMorseWPM(pr.getIdentMorseSpeed());
@@ -405,6 +293,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Get the system configuration parameters.
+	 * @return 
 	 */
 	public Parameters getParms() {
 		return pr;
@@ -412,6 +301,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Get the currently active Announcer.
+	 * @return 
 	 */
 	public Announcer getAnnouncer() {
 		return ann;
@@ -419,33 +309,38 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Transmit the passed files contents as an audio stream
+	 * @param pttCtl
+	 * @param file
+	 * @throws java.io.IOException
 	 */
 	public void transmitAudio(PTTControlParms pttCtl, String file) throws IOException {
-		FileInputStream fs = new FileInputStream(file);
-		try {
+		try (FileInputStream fs = new FileInputStream(file)) {
 			AudioFileFormat fmt = AudioSystem.getAudioFileFormat(new File(file));
-			log.info(file + ": " + fmt);
-			AudioInputStream as = AudioSystem.getAudioInputStream(fs);
-			ByteArrayOutputStream ba = new ByteArrayOutputStream();
-			byte[] data = new byte[102400];
-			int n;
-			while ((n = as.read(data)) > 0) {
-				log.info("read " + n + " bytes from " + file);
-				ba.write(data, 0, n);
+			log.log(Level.INFO, "{0}: {1}", new Object[]{file, fmt});
+			ByteArrayOutputStream ba;
+			try (AudioInputStream as = AudioSystem.getAudioInputStream(fs)) {
+				ba = new ByteArrayOutputStream();
+				byte[] data = new byte[102400];
+				int n;
+				while ((n = as.read(data)) > 0) {
+					log.log(Level.INFO, "read {0} bytes from {1}", new Object[]{n, file});
+					ba.write(data, 0, n);
+				}
 			}
-			as.close();
 			ba.close();
 			transmitAudio(pttCtl, ba.toByteArray(), ba.size(), fmt.getFormat());
 		} catch (UnsupportedAudioFileException ex) {
 			reportException(ex);
-		} finally {
-			fs.close();
 		}
 	}
 
 	/**
 	 * Transmit the passed byte array of data, up to cnt bytes, interpreted
 	 * using the passed AudioFormat
+	 * @param pttCtl
+	 * @param data
+	 * @param cnt
+	 * @param fmt
 	 */
 	public void transmitAudio(PTTControlParms pttCtl, byte[] data, int cnt, AudioFormat fmt) {
 		boolean raised = false;
@@ -454,12 +349,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			dl.open(fmt, cnt);
 			try {
 				dl.start();
-				log.info("source data (" + fmt + ") line: " + dl);
+				log.log(Level.INFO, "source data ({0}) line: {1}", new Object[]{fmt, dl});
 				raisePtt(pttCtl);
 				raised = true;
-				log.info(cnt + " total audio bytes to write: " + fmt);
+				log.log(Level.INFO, "{0} total audio bytes to write: {1}", new Object[]{cnt, fmt});
 				dl.write(data, 0, cnt);
-				log.info("wrote " + cnt + " bytes to " + dl);
+				log.log(Level.INFO, "wrote {0} bytes to {1}", new Object[]{cnt, dl});
 				dl.drain();
 				dl.stop();
 			} finally {
@@ -475,9 +370,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Speak the passed text string using the active Announcer.
+	 * @param pttCtl
+	 * @param text
 	 */
 	public void transmitSpeech(PTTControlParms pttCtl, String text) {
-		log.info("Raising PTT for TTS: \"" + text + "\"");
+		log.log(Level.INFO, "Raising PTT for TTS: \"{0}\"", text);
 		try {
 			raisePtt(pttCtl);
 		} catch (IllegalArgumentException ex) {
@@ -487,8 +384,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			Thread.sleep(500);
 			ann.stationInfo(pr, text);
 			Thread.sleep(500);
-		} catch (Exception ex) {
+		} catch (InterruptedException ex) {
 			log.log(Level.WARNING, ex.toString(), ex);
+		} catch (RuntimeException ex) {
+			log.log(Level.SEVERE, ex.toString(), ex);
+			reportException(ex);
 		} finally {
 			dropPtt(pttCtl);
 		}
@@ -496,32 +396,31 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the control for user changed gain control for the output volume.
+	 * @param gain
 	 */
 	public void setGainControl(final Control gain) {
-		runInSwing(new Runnable() {
-			public void run() {
-				crm.setControl((FloatControl) gain, gainPan);
-				gainPan.setVisible(true);
-				gainPan.revalidate();
-			}
+		runInSwing(() -> {
+			crm.setControl((FloatControl) gain, gainPan);
+			gainPan.setVisible(true);
+			gainPan.revalidate();
 		});
 	}
 
 	/**
 	 * Set the control for user changed gain control for the output volume.
+	 * @param gain
 	 */
 	public void setMicGainControl(final Control gain) {
-		runInSwing(new Runnable() {
-			public void run() {
-				mcrm.setControl((FloatControl) gain, gainPan);
-				gainPan.setVisible(true);
-				gainPan.revalidate();
-			}
+		runInSwing(() -> {
+			mcrm.setControl((FloatControl) gain, gainPan);
+			gainPan.setVisible(true);
+			gainPan.revalidate();
 		});
 	}
 
 	/**
 	 * Add a link status/progress listener
+	 * @param lis
 	 */
 	public void addLinkEventListener(LinkEventListener<?> lis) {
 		listeners.add(lis);
@@ -529,6 +428,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Remove a link status/progress listener
+	 * @param lis
 	 */
 	public void removeLinkEventListener(LinkEventListener<?> lis) {
 		listeners.remove(lis);
@@ -536,9 +436,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Send the indicated LinkEvent to all listeners
+	 * @param ev
 	 */
-	protected void sendEvent(LinkEvent ev) {
-		log.finer("Sending linkevent to " + listeners.size() + " listeners: " + ev);
+	public void sendEvent(LinkEvent ev) {
+		log.log(Level.FINER, "Sending linkevent to {0} listeners: {1}", new Object[]{listeners.size(), ev});
 		for (int i = 0; i < listeners.size(); ++i) {
 			try {
 				listeners.get(i).processEvent(ev);
@@ -553,31 +454,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public void saveFavorites() {
 		try {
-			FileOutputStream fs = new FileOutputStream(
-					new File(new File(System.getProperty("user.home"), ".javecho"), "favorites"));
-			try {
-				ObjectOutputStream os = new ObjectOutputStream(fs);
-				try {
-					List friendData = frmod.getContents();
-					os.writeObject(new Integer(6));
-					os.writeObject(friendData);
-					os.writeObject(qsoHist.getHistory());
-					os.writeObject(qsoHist.getLocation());
-					os.writeObject(qsoHist.getSize());
-					// os.writeObject( almLog.getHistory() );
-					os.writeObject(alarmMgr.almLog.getLocation());
-					os.writeObject(alarmMgr.almLog.getSize());
-					os.writeObject(alarmMgr.almEd.getHistory());
-					os.writeObject(alarmMgr.almEd.getLocation());
-					os.writeObject(alarmMgr.almEd.getSize());
-					os.writeObject(contacts);
-				} finally {
-					os.close();
-				}
-			} finally {
-				fs.close();
+			try (FileOutputStream fs = new FileOutputStream(
+					new File(new File(System.getProperty("user.home"), ".javecho"), "favorites")); ObjectOutputStream os = new ObjectOutputStream(fs)) {
+				List friendData = frmod.getContents();
+				os.writeObject(6);
+				os.writeObject(friendData);
+				os.writeObject(qsoHist.getHistory());
+				os.writeObject(qsoHist.getLocation());
+				os.writeObject(qsoHist.getSize());
+				// os.writeObject( almLog.getHistory() );
+				os.writeObject(alarmMgr.almLog.getLocation());
+				os.writeObject(alarmMgr.almLog.getSize());
+				os.writeObject(alarmMgr.almEd.getHistory());
+				os.writeObject(alarmMgr.almEd.getLocation());
+				os.writeObject(alarmMgr.almEd.getSize());
+				os.writeObject(contacts);
 			}
-		} catch (Exception ex) {
+		} catch (IOException | RuntimeException ex) {
 			reportException(ex);
 		}
 	}
@@ -586,6 +479,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Comparator for callsign based comparison of Entry objects
 	 */
 	static class EntryComparator implements Comparator<Entry> {
+		@Override
 		public int compare(Entry o1, Entry o2) {
 			Entry e1 = (Entry) o1;
 			Entry e2 = (Entry) o2;
@@ -598,18 +492,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public void loadFavorites() {
 		try {
-			FileInputStream fi = new FileInputStream(
-					new File(new File(System.getProperty("user.home"), ".javecho"), "favorites"));
-			try {
-				ObjectInputStream is = new ObjectInputStream(fi);
-				try {
-					int ver = ((Integer) is.readObject()).intValue(); // version
+			try (FileInputStream fi = new FileInputStream(
+					new File(new File(System.getProperty("user.home"), ".javecho"), "favorites"))) {
+				try (ObjectInputStream is = new ObjectInputStream(fi)) {
+					int ver = ((Integer) is.readObject()); // version
 					final List<Entry> friendData = new VectorReader<Entry>().read(is);
 					Collections.sort(friendData, new EntryComparator());
-					runInSwing(new Runnable() {
-						public void run() {
-							frmod.setData(friendData);
-						}
+					runInSwing(() -> {
+						frmod.setData(friendData);
 					});
 					if (ver > 1) {
 						List<HistoryEntry> v = new VectorReader<HistoryEntry>().read(is);
@@ -636,18 +526,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					}
 				} catch (IOException ex) {
 					reportException(ex);
-					frmod.setData(new Vector<Entry>());
-				} finally {
-					is.close();
+					frmod.setData(new ArrayList<>());
 				}
-			} finally {
-				fi.close();
 			}
-		} catch (FileNotFoundException ex) {
+		} catch (FileNotFoundException | RuntimeException ex) {
 			log.log(Level.WARNING, ex.toString(), ex);
-		} catch (RuntimeException ex) {
-			log.log(Level.WARNING, ex.toString(), ex);
-		} catch (Exception ex) {
+		} catch (IOException | ClassNotFoundException ex) {
 
 			reportException(ex);
 		}
@@ -655,15 +539,19 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Main entry point
+	 * @param args
+	 * @throws java.lang.Exception
 	 */
 	public static void main(String args[]) throws Exception {
 		// new Socket("nasouth.echolink.org", 5200).close();
 		Logger.getLogger("").getHandlers()[0].setFormatter(new SimpleFormatter());
-		new Javecho(args);
+		Javecho je = new Javecho(args);
+		je.openWindow();
 	}
 
 	/**
 	 * Add a line of text to the chat window
+	 * @param str
 	 */
 	public void addChatText(String str) {
 		Document doc = msgPane.getDocument();
@@ -672,7 +560,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				str = str.substring(0, str.length() - 1);
 			doc.insertString(doc.getEndPosition().getOffset() - 1, str + "\n", null);
 			msgPane.setCaretPosition(doc.getEndPosition().getOffset() - 1);
-		} catch (Exception ex) {
+		} catch (BadLocationException ex) {
 			reportException(ex);
 		}
 		// System.out.println("str: \""+str.trim()+"\"");
@@ -680,18 +568,20 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	/**
-	 * Set the displayed station info text. The text will have all occurances of
-	 * '\r' replaced with '\n' and then just infoPane.setText() will be used.
-	 * Thus, there is no explicit formatting done on the text other than what is
-	 * already present in the text.
+	 * Set the displayed station info text.The text will have all occurances of
+ '\r' replaced with '\n' and then just infoPane.setText() will be used. Thus, there is no explicit formatting done on the text other than what is
+ already present in the text.
+	 * @param txt
 	 */
 	public void setInfo(String txt) {
 		infoPane.setText(txt.trim().replace('\r', '\n'));
 	}
 
 	/**
-	 * set the indicated label background color based on how. If true, red,
-	 * otherwise the background of {@link #inpan}.
+	 * set the indicated label background color based on how.If true, red,
+ otherwise the background of {@link #inpan}.
+	 * @param ind
+	 * @param how
 	 */
 	protected void showActiveIndicator(JLabel ind, boolean how) {
 		ind.setBackground(how ? Color.red : inpan.getBackground());
@@ -702,8 +592,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	/**
-	 * set the indicated label background color based on how. If true, red,
-	 * otherwise the background of {@link #inpan}.
+	 * set the indicated label background color based on how.If true, red,
+ otherwise the background of {@link #inpan}.
+	 * @param ind
+	 * @param how
+	 * @param msg
 	 */
 	protected void showBadIndicator(JLabel ind, boolean how, String msg) {
 		ind.setBackground(how ? Color.yellow : inpan.getBackground());
@@ -712,6 +605,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the state of the TX indicator
+	 * @param txactive
 	 */
 	public void setTxIndicator(boolean txactive) {
 		log.log(Level.FINEST, "setTxIndicator(" + txactive + ")", new Throwable());
@@ -720,6 +614,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Set the state of the RX indicator
+	 * @param rxaudio
 	 */
 	public void setRxIndicator(boolean rxaudio) {
 		log.log(Level.FINEST, "setRxIndicator(" + rxaudio + ")", new Throwable());
@@ -728,6 +623,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * set the state of the network connection status
+	 * @param rxnet
 	 */
 	public void setNetIndicator(boolean rxnet) {
 		log.log(Level.FINEST, "setNetIndicator(" + rxnet + ")", new Throwable());
@@ -751,7 +647,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 	}
 
-	/** Site we are connected to */
+	/** Site we are connected to
+	 * @return  */
 	public String getSite() {
 		return site;
 	}
@@ -798,6 +695,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Raise the PTT signal to trigger the transmitter.
+	 * @param pttCtl
 	 */
 	public void raisePtt(PTTControlParms pttCtl) {
 		if (pr.isUserMode()) {
@@ -815,72 +713,89 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		// }
 
 		String port = pttCtl.getSerialPort();
-		seriallog.info("raisePtt: " + pttCtl);
+		seriallog.log(Level.INFO, "raisePtt: {0}", pttCtl);
 		if (pttCtl.isVoxPtt() == false) {
 			try {
 				pttCtrlPort = (SerialPort) getOpenedPort(port);
 				pttCtrlPort.setSerialPortParams(pr.isTxCtrlSerialspeed() ? 9600 : 2400, SerialPort.DATABITS_8,
 						SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-			} catch (Exception ex) {
+			} catch (UnsupportedCommOperationException ex) {
 				IllegalArgumentException iae = new IllegalArgumentException("Port already in use? " + ex);
 				throw ((IllegalArgumentException) iae.initCause(ex));
+			} catch (RuntimeException ex) {
+				log.log( Level.SEVERE, ex.toString(), ex );
+				reportException(ex);
+				return;
 			}
 
-			if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.RTS) {
-				seriallog.info("raisePtt: raise RTS");
-				pttCtrlPort.setRTS(true);
-				setTxIndicator(true);
-			} else if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.DTR) {
-				seriallog.info("raisePtt: raise DTR");
-				pttCtrlPort.setDTR(true);
-				setTxIndicator(true);
-			} else if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.ASCII) {
-				seriallog.info("raisePtt: send 'T' out " + port);
-				try {
-					OutputStream os = pttCtrlPort.getOutputStream();
-					os.write("T\r".getBytes());
-					os.flush();
+			if (null != pttCtl.getSerialPttType()) switch (pttCtl.getSerialPttType()) {
+				case RTS:
+					seriallog.info("raisePtt: raise RTS");
+					pttCtrlPort.setRTS(true);
 					setTxIndicator(true);
-				} catch (Exception ex) {
-					seriallog.log(Level.WARNING, ex.toString(), ex);
-				}
+					break;
+				case DTR:
+					seriallog.info("raisePtt: raise DTR");
+					pttCtrlPort.setDTR(true);
+					setTxIndicator(true);
+					break;
+				case ASCII:
+					seriallog.log(Level.INFO, "raisePtt: send ''T'' out {0}", port);
+					try {
+						OutputStream os = pttCtrlPort.getOutputStream();
+						os.write("T\r".getBytes());
+						os.flush();
+						setTxIndicator(true);
+					} catch (IOException ex) {
+						seriallog.log(Level.WARNING, ex.toString(), ex);
+					}	break;
+				default:
+					break;
 			}
 			/** Wait for PTT to settle */
 			try {
 				Thread.sleep(750);
-			} catch (Exception ex) {
+			} catch (InterruptedException ex) {
 			}
 		}
 	}
 
 	/**
 	 * Drop the PTT
+	 * @param pttCtl
 	 */
 	public void dropPtt(PTTControlParms pttCtl) {
-		log.fine("dropPtt: userMode? " + pr.isUserMode() + ", port: " + pttCtrlPort);
+		log.log(Level.FINE, "dropPtt: userMode? {0}, port: {1}", new Object[]{pr.isUserMode(), pttCtrlPort});
 		if (pr.isUserMode() || pttCtrlPort == null)
 			return;
 		try {
 			Thread.sleep(750);
-		} catch (Exception ex) {
+		} catch (InterruptedException ex) {
 		}
 		try {
 			if (pttCtl.isVoxPtt() == false) {
-				if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.RTS) {
-					seriallog.fine("dropPtt: drop RTS");
-					pttCtrlPort.setRTS(false);
-				} else if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.DTR) {
-					seriallog.fine("dropPtt: drop DTR");
-					pttCtrlPort.setDTR(false);
-				} else if (pttCtl.getSerialPttType() == PTTControlParms.SerialPttType.ASCII) {
-					seriallog.fine("dropPtt: send 'R' out pttCtrlPort");
-					try {
-						OutputStream os = pttCtrlPort.getOutputStream();
-						os.write("R\r".getBytes());
-						os.flush();
-					} catch (Exception ex) {
-						seriallog.log(Level.WARNING, ex.toString(), ex);
-					}
+				if (null != pttCtl.getSerialPttType()) switch (pttCtl.getSerialPttType()) {
+					case RTS:
+						seriallog.fine("dropPtt: drop RTS");
+						pttCtrlPort.setRTS(false);
+						break;
+					case DTR:
+						seriallog.fine("dropPtt: drop DTR");
+						pttCtrlPort.setDTR(false);
+						break;
+					case ASCII:
+						seriallog.fine("dropPtt: send 'R' out pttCtrlPort");
+						try {
+							OutputStream os = pttCtrlPort.getOutputStream();
+							os.write("R\r".getBytes());
+							os.flush();
+						} catch (IOException ex) {
+							seriallog.log(Level.WARNING, ex.toString(), ex);
+						}
+						break;
+
+					default:
+						break;
 				}
 			}
 		} finally {
@@ -936,7 +851,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	public void setMode(LinkMode which) {
 		if (lastmode == which)
 			return;
-		log.info("Set MODE: " + modeStr(which));
+		log.log(Level.INFO, "Set MODE: {0}", modeStr(which));
 		switch (which) {
 		case MODE_IDLE:
 			if (txcnt != null) {
@@ -1005,7 +920,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			break;
 		}
 		lastmode = which;
-		log.finer("TX control at: " + which);
+		log.log(Level.FINER, "TX control at: {0}", which);
 		idPan.revalidate();
 		idPan.repaint();
 		txbut.repaint();
@@ -1017,27 +932,27 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	private void startRxTxTimer() {
 		txtime = System.currentTimeMillis();
 		txcnt = new TimerTask() {
+			@Override
 			public void run() {
 				final long dt = System.currentTimeMillis() - txtime;
-				final SimpleDateFormat fmt = new SimpleDateFormat("hh:mm:ss");
-				runInSwing(new Runnable() {
-					public void run() {
-						int v = (int) (dt / 1000);
-						int s = v % 60;
-						int m = (v / 60) % 60;
-						int h = v / 3600;
-						String ss = s + "";
-						if (s < 10)
-							ss = "0" + s;
-						String ms = m + "";
-						if (m < 10)
-							ms = "0" + m;
-						String hs = h + "";
-						if (h < 10)
-							hs = "0" + h;
-						xtime.setText(hs + ":" + ms + ":" + ss);
-						xtime.repaint();
+//				final SimpleDateFormat fmt = new SimpleDateFormat("hh:mm:ss");
+				runInSwing(() -> {
+					int v = (int) (dt / 1000);
+					int s = v % 60;
+					int m = (v / 60) % 60;
+					int h = v / 3600;
+					String ss = s + "";
+					if (s < 10)
+						ss = "0" + s;
+					String ms1 = m + "";
+					if (m < 10) {
+						ms1 = "0" + m;
 					}
+					String hs = h + "";
+					if (h < 10)
+						hs = "0" + h;
+					xtime.setText(hs + ":" + ms1 + ":" + ss);
+					xtime.repaint();
 				});
 			}
 		};
@@ -1058,13 +973,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * expected
 	 */
 	void msg(final String str) {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					msgData.getDocument().insertString(msgData.getDocument().getLength(), str + "\n", null);
-				} catch (BadLocationException ex) {
-					log.log(Level.WARNING, ex.toString(), ex);
-				}
+		SwingUtilities.invokeLater(() -> {
+			try {
+				msgData.getDocument().insertString(msgData.getDocument().getLength(), str + "\n", null);
+			} catch (BadLocationException ex) {
+				log.log(Level.WARNING, ex.toString(), ex);
 			}
 		});
 	}
@@ -1079,25 +992,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * This is still under development...
 	 */
 	private void registerMediaHandler() {
-		addLinkEventListener(new LinkEventListener<Object>() {
-			public void processEvent(LinkEvent<Object> ev) {
-				if (ev.getType() == LinkMode.SDES_EVENT && ev.isSend() == false) {
-					int sz = ev.getValue();
-					RTPacket pk = new RTPacket((byte[]) ev.getSource(), sz);
-					rtcp_sdes_request r = new rtcp_sdes_request(2);
-					if (r == null || r.item == null) {
-						progress("no SDES for " + sz + " byte packet");
-						return;
-					}
-					r.item[0].r_item = rtcp_sdes_type_t.RTCP_SDES_NAME;
-					r.item[1].r_item = rtcp_sdes_type_t.RTCP_SDES_PRIV;
-					boolean isSdes = pk.parseSDES(r);
-					if (!isSdes)
-						return;
-					if (r.item[1].r_text != null && r.item[1].r_text.length > 0) {
-						Map h = RTPacket.PropertyManager.getProperties(r.item[1].r_text);
-						progress("Found properties: " + h);
-					}
+		addLinkEventListener((LinkEvent<Object> ev) -> {
+			if (ev.getType() == LinkMode.SDES_EVENT && ev.isSend() == false) {
+				int sz = ev.getValue();
+				RTPacket pk = new RTPacket((byte[]) ev.getSource(), sz);
+				rtcp_sdes_request r = new rtcp_sdes_request(2);
+				if ( r.item == null) {
+					progress("no SDES for " + sz + " byte packet");
+					return;
+				}
+				r.item[0].r_item = rtcp_sdes_type_t.RTCP_SDES_NAME;
+				r.item[1].r_item = rtcp_sdes_type_t.RTCP_SDES_PRIV;
+				boolean isSdes = pk.parseSDES(r);
+				if (!isSdes)
+					return;
+				if (r.item[1].r_text != null && r.item[1].r_text.length > 0) {
+					Map h = RTPacket.PropertyManager.getProperties(r.item[1].r_text);
+					progress("Found properties: " + h);
 				}
 			}
 		});
@@ -1105,6 +1016,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * handles an inbound SDES control packet on the RTP link.
+	 * @param addr
+	 * @param arr
+	 * @param sz
 	 */
 	public void doControl(String addr, byte[] arr, int sz) {
 		progress("handling control from: " + addr + ", size=" + sz);
@@ -1117,10 +1031,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		boolean isSdes = false;
 		int dataPort = 5198;
 		int controlPort = 5199;
-		String lat = "0000.00N";
-		String lon = "00000.00W";
+//		String lat = "0000.00N";
+//		String lon = "00000.00W";
 
-		if (r == null || r.item == null) {
+		if ( r.item == null) {
 			progress("no SDES for " + sz + " byte packet");
 			// return;
 		} else {
@@ -1131,7 +1045,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		if (pr.isAudioTrace())
 			pk.dumpSdes();
 
-		Vector v = pk.parseSDES();
+		List<rtcp_sdes_request_item> v = pk.parseSDES();
 
 		progress("parseSDES for name and tool returns: " + isSdes);
 		if (isSdes) {
@@ -1139,40 +1053,41 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			try {
 				String name = null;
 				for (int i = 0; i < v.size(); ++i) {
-					rtcp_sdes_request_item item = (rtcp_sdes_request_item) v.elementAt(i);
-					if (item.r_item == rtcp_sdes_type_t.RTCP_SDES_NAME) {
-						log.finest("rtext.length: " + item.r_text.length + ", [0] = " + (item.r_text[0] & 0xff)
-								+ ", [1] = " + (item.r_text[1] & 0xff));
-						name = new String(item.r_text).split(" ")[0].trim();
-						// if( name.length() == 0 )
-						// name = new String( item.r_text,2,item.r_text[1]
-						// ).split(" ")[1].trim();
-						progress("getting name from RTCP_SDES_NAME: \"" + name + "\" in \"" + new String(item.r_text)
-								+ "\"");
-					} else if (item.r_item == rtcp_sdes_type_t.RTCP_SDES_PRIV) {
-						if (item.r_text[0] == 1) {
-							if (item.r_text[1] == 'P') {
-								dataPort = Integer.parseInt(new String(item.r_text, 2, item.r_text.length - 2));
-								controlPort = dataPort + 1;
-							}
-						} else if (item.r_text.length > 3 && item.r_text[0] == 't' && item.r_text[1] == 'x'
-								&& item.r_text[2] == 't') {
-							progress("Got 'txt' private data: " + new String(item.r_text, 4, item.r_text.length - 5));
-						} else if (item.r_text.length > 5 && item.r_text[0] == 'w' && item.r_text[1] == 'e'
-								&& item.r_text[2] == 'b') {
-							String url = new String(item.r_text, 4, item.r_text.length - 5);
-							if (pr.isFollowingUsersPage()
-									&& (!getTxMode() || (getTxMode() && pr.isToggleSendFollow() == false))) {
-								web.pushURL(currentURL);
-								web.openURL(new URL(url));// , brws, brtxt,
-															// bback );
-							}
-						}
-					} else {
-						if (pr.isAudioTrace()) {
-							progress("unprocessed sdes packet: " + RTPacket.sdesType(item.r_item & 0xff));
-							dumpPacket("ctrl?", arr, sz, 400);
-						}
+					rtcp_sdes_request_item item = v.get(i);
+					switch (item.r_item) {
+						case rtcp_sdes_type_t.RTCP_SDES_NAME:
+							log.log(Level.FINEST, "rtext.length: {0}, [0] = {1}, [1] = {2}", new Object[]{item.r_text.length, item.r_text[0] & 0xff, item.r_text[1] & 0xff});
+							name = new String(item.r_text).split(" ")[0].trim();
+							// if( name.length() == 0 )
+							// name = new String( item.r_text,2,item.r_text[1]
+							// ).split(" ")[1].trim();
+							progress("getting name from RTCP_SDES_NAME: \"" + name + "\" in \"" + new String(item.r_text)
+									+ "\"");
+							break;
+						case rtcp_sdes_type_t.RTCP_SDES_PRIV:
+							if (item.r_text[0] == 1) {
+								if (item.r_text[1] == 'P') {
+									dataPort = Integer.parseInt(new String(item.r_text, 2, item.r_text.length - 2));
+									controlPort = dataPort + 1;
+								}
+							} else if (item.r_text.length > 3 && item.r_text[0] == 't' && item.r_text[1] == 'x'
+									&& item.r_text[2] == 't') {
+								progress("Got 'txt' private data: " + new String(item.r_text, 4, item.r_text.length - 5));
+							} else if (item.r_text.length > 5 && item.r_text[0] == 'w' && item.r_text[1] == 'e'
+									&& item.r_text[2] == 'b') {
+								String url = new String(item.r_text, 4, item.r_text.length - 5);
+								if (pr.isFollowingUsersPage()
+										&& (!getTxMode() || (getTxMode() && pr.isToggleSendFollow() == false))) {
+									web.pushURL(currentURL);
+									web.openURL(new URL(url));// , brws, brtxt,
+									// bback );
+								}
+							}	break;
+						default:
+							if (pr.isAudioTrace()) {
+								progress("unprocessed sdes packet: " + RTPacket.sdesType(item.r_item & 0xff));
+								dumpPacket("ctrl?", arr, sz, 400);
+							}	break;
 					}
 				}
 
@@ -1204,7 +1119,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						progress(name + " not found in list, can't connect!");
 					}
 				}
-			} catch (Exception ex) {
+			} catch (NumberFormatException | MalformedURLException ex) {
 				log.log(Level.WARNING, ex.toString(), ex);
 			}
 			if (pk.isRTCPByepacket()) {
@@ -1220,9 +1135,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			if (ssa.isConnectedTo(addr)) {
 				try {
 					ssa.disconnectFrom(addr);
-					sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT,
+					sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT,
 							ssa.getConnectCount(), sd));
-				} catch (Exception ex) {
+				} catch (IOException ex) {
 					log.log(Level.WARNING, ex.toString(), ex);
 				}
 				if (cons != null) {
@@ -1232,9 +1147,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			} else {
 				try {
 					ssa.disconnectFrom(addr);
-					sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT,
+					sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT,
 							ssa.getConnectCount(), sd));
-				} catch (Exception ex) {
+				} catch (IOException ex) {
+					log.log( Level.WARNING, ex.toString(), ex );
 				}
 				conn.setText("Connection Refused to: " + addr);
 				// failSound();
@@ -1267,12 +1183,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	/**
 	 * Make sure the dialog is opened inside of an swing worker thread.
 	 */
-	static void showMessageDialog(final Window par, final Object msg, final String title, final int type) {
+	void showMessageDialog(final Window par, final Object msg, final String title, final int type) {
 		if (pr.isUserMode()) {
-			runInSwing(new Runnable() {
-				public void run() {
-					JOptionPane.showMessageDialog(par, msg, title, type);
-				}
+			runInSwing(() -> {
+				JOptionPane.showMessageDialog(par, msg, title, type);
 			});
 		} else {
 			progress(title + ": " + msg);
@@ -1288,7 +1202,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		} else {
 			try {
 				SwingUtilities.invokeAndWait(r);
-			} catch (Exception ex) {
+			} catch (InterruptedException | InvocationTargetException ex) {
 			}
 		}
 	}
@@ -1326,7 +1240,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 */
 	public static void dumpPacket(String which, byte[] a, int len, int max) {
 		byte[] h = "0123456789abcdef".getBytes();
-		log.finest(which + " (" + max + " of " + len + "):\t");
+		log.log(Level.FINEST, "{0} ({1} of {2}):\t", new Object[]{which, max, len});
 		String line = "";
 		for (int i = 0; i < len && max > 0 && i < max; ++i) {
 			int v1 = (a[i] & 0xf0) >> 4;
@@ -1343,6 +1257,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Periodic logged-in user refresher
 	 */
 	class ListRefreshTask extends TimerTask {
+		@Override
 		public void run() {
 			progress("Refreshing list...");
 			if (pr.isStationListUpdateAuto()) {
@@ -1362,19 +1277,22 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Periodic logged-in user refresher
 	 */
 	class LogonUpdateTask extends TimerTask {
+		@Override
 		public void run() {
 			progress("Refreshing logon...");
 			try {
 				updateLogon();
-			} catch (Exception ex) {
+			} catch (IOException ex) {
 				log.log(Level.WARNING, ex.toString(), ex);
 			}
 			timer.schedule(new LogonUpdateTask(), pr.getLogonInterval() * 1000);
 		}
 	}
-
+	JSplitPane sp3;
 	/**
 	 * Main constructor
+	 * @param args
+	 * @throws java.lang.Exception
 	 */
 	public Javecho(String args[]) throws Exception {
 		super("JavEcho - W5GGW");
@@ -1413,18 +1331,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		if (anncls == null)
 			anncls = "org.wonderly.ham.speech.Announcements";
 
-		log.info("Announcement Implementation: " + anncls);
+		log.log(Level.INFO, "Announcement Implementation: {0}", anncls);
 		try {
 			Class acl = Class.forName(anncls);
 			ann = (Announcer) acl.newInstance();
-		} catch (IllegalAccessException ex) {
-			log.warning(anncls + ": class must have public noargs constructor");
-		} catch (ClassNotFoundException ex) {
+		} catch (IllegalAccessException | InstantiationException ex) {
+			log.log(Level.WARNING, "{0}: class must have public noargs constructor", anncls);
+		} catch (ClassNotFoundException | NoClassDefFoundError ex) {
 			log.log(Level.SEVERE, anncls, ex);
-		} catch (NoClassDefFoundError ex) {
-			log.log(Level.SEVERE, anncls, ex);
-		} catch (InstantiationException ex) {
-			log.warning(anncls + ": class must have public noargs constructor");
 		}
 		String laf = UIManager.getSystemLookAndFeelClassName();
 		// If you want the Cross Platform L&F instead, comment out the
@@ -1433,15 +1347,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		try {
 			UIManager.setLookAndFeel(laf);
 		} catch (UnsupportedLookAndFeelException exc) {
-			System.err.println("Warning: UnsupportedLookAndFeel: " + laf);
-		} catch (Exception exc) {
-			System.err.println("Error loading " + laf + ": " + exc);
+			log.log(Level.SEVERE, "Warning: UnsupportedLookAndFeel: " + laf, exc);
+		} catch (ClassNotFoundException | IllegalAccessException | InstantiationException exc) {
+			log.log(Level.SEVERE, "Error loading " + laf + ": " + exc, exc);
 		}
 		audio = new JavaMidiAudioProvider();
 		qsoHist = new QSOHistory(this);
 		alarmMgr.almLog = new AlarmLog(this, this);
 		alarmMgr.almEd = new AlarmEditor(this);
-		listeners = new ArrayList<LinkEventListener<?>>();
+		listeners = new ArrayList<>();
 		pr = new Parameters(this);
 		pr.loadData();
 
@@ -1530,10 +1444,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		mmpk.pack(inpan).fillx().gridx(0).gridy(2);
 		web = new HTMLBrowser(Javecho.this);
-		web.addPageListener(new PageListener() {
-			public void pageOpened(PageEvent ev) {
-				log.info("New Page opened: " + ev);
-			}
+		web.addPageListener((PageEvent ev) -> {
+			log.log(Level.INFO, "New Page opened: {0}", ev);
 		});
 		tp.add("Echo Link", content);
 		tp.add("Web", web);
@@ -1541,15 +1453,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		setContentPane(mmp);
 		setTitle("JavEcho - " + pr.getCallSign());
 
-		staList = new Vector<Entry>();
-		frList = new Vector<Entry>();
+		staList = new ArrayList<>();
+		frList = new ArrayList<>();
 
 		locmod = new MyLocModel(staList, false);
 		if( alarmMgr == null || sysmsg == null ) {
 			JOptionPane.showMessageDialog( this,  "AlarmManager instance is not initialized yet");
 		}
-		trmod = new MyModel(staList, "All Stations", alarmMgr, sysmsg, false);
-		frmod = new MyModel(frList, "Favorites", alarmMgr, sysmsg, false);
+		trmod = new MyModel(this, staList, "All Stations", alarmMgr, sysmsg, false);
+		frmod = new MyModel(this,frList, "Favorites", alarmMgr, sysmsg, false);
 
 		locations = new JTree(locmod);
 		favorites = new JTree(frmod);
@@ -1567,7 +1479,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		Packer pk = new Packer(content);
 		JSplitPane sp1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JSplitPane sp2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-		JSplitPane sp3 = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		 sp3 = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		mmpk.pack(tools).fillx().gridx(0).gridy(0);
 		pk.pack(sp1).fillboth().gridx(0).gridy(1);
 		sp1.setLeftComponent(sp2);
@@ -1591,10 +1503,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		dt = new DropTarget(favorites, new FavoritesTargetListener());
 
 		dgs = DragSource.getDefaultDragSource();
-		sdgr = dgs.createDefaultDragGestureRecognizer(stations, 255, new EntryDragRecoginizer(stations));
-		fdgr = dgs.createDefaultDragGestureRecognizer(favorites, 255, new EntryDragRecoginizer(favorites));
+		sdgr = dgs.createDefaultDragGestureRecognizer(stations, 255, new EntryDragRecognizer(stations, this, dgs));
+		fdgr = dgs.createDefaultDragGestureRecognizer(favorites, 255, new EntryDragRecognizer(favorites, this, dgs));
 
-		flgr = dgs.createDefaultDragGestureRecognizer(locations, 255, new EntryDragRecoginizer(locations));
+		flgr = dgs.createDefaultDragGestureRecognizer(locations, 255, new EntryDragRecognizer(locations, this, dgs));
 
 		JPanel infop = new JPanel();
 		Packer ipk = new Packer(infop);
@@ -1602,8 +1514,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		ipk.pack(last = new JLabel("", JLabel.CENTER)).gridx(0).gridy(1).fillx().inset(4, 4, 4, 4);
 		ipk.pack(ipaddr = new JLabel("", JLabel.CENTER)).gridx(0).gridy(2).fillx().inset(4, 4, 4, 4);
 		aupan = new JPanel();
-		// aupan.setOpaque(true);
-		// aupan.setBackground( Color.green );
+		aupan.setOpaque(true);
+		aupan.setBackground( Color.green );
 		Packer apk = new Packer(aupan);
 		apk.pack(txbut = new JButton("TX")).gridx(0).gridy(0);
 		txbut.setMargin(new Insets(1, 1, 1, 1));
@@ -1653,7 +1565,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		// gpk.pack( new JLabel("Vol") ).gridx(0).gridy(++gy).fillx().gridw(2);
 		JLabel gainMax = new JLabel(" ");
 		JLabel gainMin = new JLabel(" ");
-		JLabel gainVal = new JLabel("0", JLabel.CENTER);
+		gainVal = new JLabel("0", JLabel.CENTER);
 		gainSlider = new JSlider(crm = new ControlRangeModel(Javecho.this, gainMin, gainMax, gainVal));
 		gainSlider.setOrientation(SwingConstants.VERTICAL);
 
@@ -1679,17 +1591,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			gpk.pack(new JSeparator()).gridx(1).gridy(++gy).fillx();
 			gpk.pack(micGainVal).gridx(1).gridy(++gy).fillx();
 			gpk.pack(new JSeparator()).gridx(0).gridy(++gy).fillx().gridw(2);
-			gainPan.setBorder(gainBorder = BorderFactory.createTitledBorder("Mic/Speaker Volume"));
+			gainPan.setBorder( BorderFactory.createTitledBorder("Mic/Speaker Volume"));
 		} else {
-			gainPan.setBorder(gainBorder = BorderFactory.createTitledBorder("Volume"));
+			gainPan.setBorder( BorderFactory.createTitledBorder("Volume"));
 		}
 
 		gainPan.setVisible(false);
 		volMute = new JCheckBox("Mute");
-		volMute.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				crm.setMuted(volMute.isSelected());
-			}
+		volMute.addActionListener((ActionEvent ev) -> {
+			crm.setMuted(volMute.isSelected());
 		});
 		gpk.pack(volMute).gridx(0).gridy(6);
 
@@ -1704,11 +1614,13 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		infoPane.setWrapStyleWord(true);
 		infoPane.setLineWrap(true);
 		infoPane.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mousePressed(MouseEvent ev) {
 				if (ev.isPopupTrigger())
 					popup(ev);
 			}
 
+			@Override
 			public void mouseReleased(MouseEvent ev) {
 				if (ev.isPopupTrigger())
 					popup(ev);
@@ -1734,34 +1646,32 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				pop.addSeparator();
 				mi = new JMenuItem("Add to Favorites");
 				final StationData nd = getDragCall(infoPane, ep);
-				mi.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						Entry e = findEntry(nd.getCall());
-						if (e == null)
-							return;
-						List<Entry> friendData = frmod.getContents();
-						if (friendData.contains(e) == false) {
-							frmod.addData(e);
-						}
-						saveFavorites();
+				mi.addActionListener((ActionEvent ev1) -> {
+					Entry e = findEntry(nd.getCall());
+					if (e == null)
+						return;
+					List<Entry> friendData = frmod.getContents();
+					if (friendData.contains(e) == false) {
+						frmod.addData(e);
 					}
+					saveFavorites();
 				});
-				if (nd == null)
-					mi.setEnabled(false);
-				else
-					mi.setText("Add " + nd.getCall() + " to Favorites");
+//				if (nd == null)
+//					mi.setEnabled(false);
+//				else
+				mi.setText("Add " + nd.getCall() + " to Favorites");
 				pop.add(mi);
 				pop.show(infoPane, ev.getX(), ev.getY());
 			}
 		});
-		DropTarget idt = new DropTarget(infoPane, new InfoPaneTargetListener());
+		DropTarget idt = new DropTarget(infoPane, new InfoPaneTargetListener(this));
 		// infoPane.setWrapStyleWord(true);
 		infoPane.setFont(new Font("serif", Font.BOLD, 14));
 		infoPane.setForeground(Color.blue);
 		infoPane.setEditable(false);
 		infoPane.setBackground(sp2.getBackground());
 		DragGestureRecognizer infodg = dgs.createDefaultDragGestureRecognizer(infoPane, 255,
-				new TextDragRecoginizer(infoPane));
+				new TextDragRecognizer(infoPane, this, dgs));
 		JPanel ipn = new JPanel();
 		Packer ipnk = new Packer(ipn);
 		ipnk.pack(new JScrollPane(infoPane)).fillboth();
@@ -1771,20 +1681,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		stpan.setBorder(BorderFactory.createTitledBorder("Contact Information"));
 		statList = new JTextArea();
 		statList.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
 			public void removeUpdate(DocumentEvent ev) {
 				setContacts(statList.getText());
 			}
 
+			@Override
 			public void changedUpdate(DocumentEvent ev) {
 				setContacts(statList.getText());
 			}
 
+			@Override
 			public void insertUpdate(DocumentEvent ev) {
 				setContacts(statList.getText());
 			}
 		});
-		DragGestureRecognizer stldg = dgs.createDefaultDragGestureRecognizer(statList, 255,
-				new StationDataDragRecoginizer(statList));
+		stldg = dgs.createDefaultDragGestureRecognizer(statList, 255,
+				new StationDataDragRecognizer(statList, this, dgs));
 		stpk.pack(new JScrollPane(statList)).fillboth();
 		JTabbedPane iftp = new JTabbedPane();
 		iftp.add("Info", ipn);
@@ -1802,25 +1715,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		final JTextField msgText = new JTextField();
 		mpk.pack(msgText).gridx(0).gridy(1).fillx();
 		mpk.pack(msgSend).gridx(1).gridy(1);
-		ActionListener msgAct = new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				try {
-					String call = pr.getCallSign();
-					String text = msgText.getText();
-					byte data[] = new byte[7 + call.length() + text.length() + 3];
-					byte[] arr = ("oNDATA" + call + ">" + text).getBytes();
-					System.arraycopy(arr, 0, data, 0, arr.length);
-					data[arr.length] = '\r';
-					data[arr.length + 1] = '\n';
-					data[arr.length + 2] = 0;
-					ssa.sendPacket(data, ConnectionManager.CHAT_TYPE);
-					msgText.setText("");
-					msgText.repaint();
-					msgSend.requestFocus(false);
-					msgText.requestFocus(true);
-				} catch (Exception ex) {
-					reportException(ex);
-				}
+		ActionListener msgAct = (ActionEvent ev) -> {
+			try {
+				String call = pr.getCallSign();
+				String text = msgText.getText();
+				byte data[] = new byte[7 + call.length() + text.length() + 3];
+				byte[] arr = ("oNDATA" + call + ">" + text).getBytes();
+				System.arraycopy(arr, 0, data, 0, arr.length);
+				data[arr.length] = '\r';
+				data[arr.length + 1] = '\n';
+				data[arr.length + 2] = 0;
+				ssa.sendPacket(data, ConnectionManager.CHAT_TYPE);
+				msgText.setText("");
+				msgText.repaint();
+				msgSend.requestFocus(false);
+				msgText.requestFocus(true);
+			} catch (IOException | RuntimeException ex) {
+				reportException(ex);
 			}
 		};
 		msgText.addActionListener(msgAct);
@@ -1830,15 +1741,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		JMenuBar bar = new JMenuBar();
 		buildMenuBar(bar);
 		setJMenuBar(bar);
-
-		// Get window up and visible
-		pack();
-		setSize(700, 600);
-		setLocation(100, 100);
-		addWindowListener(new WindowAdapter() {
+				addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosing(WindowEvent ev) {
-				new ComponentUpdateThread<Object>(Javecho.this) {
-					public Object construct() {
+				new ComponentUpdateThread<Void>(Javecho.this) {
+					@Override
+					public Void construct() {
 						checkExit();
 						return null;
 					}
@@ -1856,16 +1764,19 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		sp2.repaint();
 
 		new ComponentUpdateThread<Void>(favorites) {
+			@Override
 			public void setup() {
 				super.setup();
 				favorites.repaint();
 			}
 
+			@Override
 			public Void construct() {
 				loadFavorites();
 				return null;
 			}
 
+			@Override
 			public void finished() {
 				favorites.repaint();
 			}
@@ -1876,18 +1787,21 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		setMode(LinkMode.MODE_IDLE);
 		addKeyListener(new KeyListener() {
+			@Override
 			public void keyTyped(KeyEvent ev) {
 				// progress("Got keyevent: "+ev );
 				if (ev.getKeyChar() == ' ' && txToggle)
 					setTxMode(!getTxMode());
 			}
 
+			@Override
 			public void keyPressed(KeyEvent ev) {
 				// progress("Got keyevent: "+ev );
 				if (ev.getKeyChar() == ' ' && !txToggle)
 					setTxMode(true);
 			}
 
+			@Override
 			public void keyReleased(KeyEvent ev) {
 				// progress("Got keyevent: "+ev );
 				if (ev.getKeyChar() == ' ' && !txToggle)
@@ -1903,7 +1817,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		if (pr.isStationListUpdateAuto() == false)
 			upd = 120 * 60;
 		timer.schedule(new ListRefreshTask(), upd * 1000);
-		if ((upd = pr.getLogonInterval()) == 0)
+		upd = pr.getLogonInterval();
+		if ( upd == 0)
 			pr.setLogonInterval(upd = 360);
 		else if ((upd = pr.getLogonInterval()) < 120)
 			pr.setLogonInterval(upd = 120);
@@ -1916,7 +1831,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				} catch (IOException ex) {
 					log.log(Level.WARNING, ex.toString(), ex);
 				}
-			} catch (Exception ex) {
+			} catch (MalformedURLException ex) {
 				reportException(ex);
 			}
 		}
@@ -1947,7 +1862,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		} else {
 			progress("No station info property set");
 		}
+	}
+	
+	public void openWindow() {
+		// Get window up and visible
+		pack();
+		setSize(700, 600);
+		setLocation(100, 100);
 		new Thread() {
+			@Override
 			public void run() {
 				if (ann != null)
 					ann.say(pr, "Welcome to Jav echo");
@@ -1958,6 +1881,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		if (pr.isUserMode() == false && enableSysopMode) {
 			statid = new StationIDManager(pr, Javecho.this);
 			sysopPtt = new SysopRecvAvailControl(pr.getRxCtrlSerialport());
+			sysopPtt.start();
 			average.setVox(pr.isRxCtrlVox());
 			// addLinkEventListener( sysopPtt );
 		} else {
@@ -2004,7 +1928,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			try {
 				try {
 					acc.sendLogoff();
-				} catch (Exception ex) {
+				} catch (IOException ex) {
 					log.log(Level.WARNING, ex.toString(), ex);
 				}
 				try {
@@ -2016,7 +1940,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							ssa.disconnectAll();
 						}
 					}
-				} catch (Exception ex) {
+				} catch (IOException ex) {
 					log.log(Level.WARNING, ex.toString(), ex);
 				}
 			} finally {
@@ -2030,6 +1954,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Open the passed URL in the users browser tab.
+	 * @param u
+	 * @param brws
+	 * @param brtxt
+	 * @param bback
 	 */
 	public void openURL(URL u, JEditorPane brws, JTextField brtxt, JButton bback) {
 		try {
@@ -2072,11 +2000,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			if (pr.isSendingCurrentPage()) {
 				ssa.sendSdesWithWebPage(currentWebPage());
 			}
-		} catch (Exception ex) {
+		} catch (IOException ex) {
 			reportException(ex);
 			try {
 				web.backup();
-			} catch (Exception exx) {
+			} catch (IOException exx) {
 				reportException(exx);
 			}
 		}
@@ -2084,6 +2012,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Get the URL of the current web page
+	 * @return 
 	 */
 	public String currentWebPage() {
 		if (currentURL == null)
@@ -2093,6 +2022,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Add the indicated action to the passed toolbar
+	 * @param tools
+	 * @param a
 	 */
 	public void toolsAdd(JToolBar tools, Action a) {
 		JButton b = tools.add(a);
@@ -2115,10 +2046,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		b.setToolTipText(str == null ? (String) null : str.toString());
 		if (a instanceof LabeledToggleAction) {
 			final LabeledToggleAction la = (LabeledToggleAction) a;
-			la.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ev) {
-					b.setSelected(la.isSelected());
-				}
+			la.addActionListener((ActionEvent ev) -> {
+				b.setSelected(la.isSelected());
 			});
 		}
 		b.setText(null);
@@ -2252,12 +2181,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	private void treeSetup(final JTree tree, final TreeModel mod) {
 
 		tree.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mousePressed(MouseEvent ev) {
 				if (ev.isPopupTrigger() == false)
 					return;
 				stationPopup(ev, tree);
 			}
 
+			@Override
 			public void mouseReleased(MouseEvent ev) {
 				if (ev.isPopupTrigger() == false)
 					return;
@@ -2265,13 +2196,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 		});
 
-		tree.addTreeSelectionListener(new TreeSelectionListener() {
-			public void valueChanged(TreeSelectionEvent ev) {
-				checkTreeSelection(tree, ev, mod);
-			}
+		tree.addTreeSelectionListener((TreeSelectionEvent ev) -> {
+			checkTreeSelection(tree, ev, mod);
 		});
 		tree.setCellRenderer(new MyCellRenderer(tree.getCellRenderer()));
 		tree.addMouseListener(new MouseAdapter() {
+			@Override
 			public void mouseClicked(MouseEvent ev) {
 				if (tree.getSelectionPath() != null) {
 					Object node = tree.getSelectionPath().getLastPathComponent();
@@ -2296,6 +2226,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	/**
 	 * Add the passed station as one we want alarms for
+	 * @param station
 	 */
 	public void addAlarm(StationData station) {
 		String st = station.getCall();
@@ -2316,85 +2247,74 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		JPopupMenu m = new JPopupMenu();
 		JMenuItem mi;
 		m.add(mi = new JMenuItem("Add Call Sign"));
-		mi.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				String call = JOptionPane.showInputDialog(Javecho.this, "Enter Call To Add", "Add a Call Sign",
-						JOptionPane.QUESTION_MESSAGE);
-				if (call == null)
-					return;
-				call = call.toUpperCase();
-				Entry e = trmod.findStation(call);
-				if (e == null) {
-					StationData dt = StationData.dataFor(call);
-					e = new Entry(dt, Entry.TYPE_STATION);
-				}
-				frmod.addData(e);
-				saveFavorites();
+		mi.addActionListener((ActionEvent ev1) -> {
+			String call = JOptionPane.showInputDialog(Javecho.this, "Enter Call To Add", "Add a Call Sign",
+					JOptionPane.QUESTION_MESSAGE);
+			if (call == null)
+				return;
+			call = call.toUpperCase();
+			Entry e = trmod.findStation(call);
+			if (e == null) {
+				StationData dt1 = StationData.dataFor(call);
+				e = new Entry(dt1, Entry.TYPE_STATION);
 			}
+			frmod.addData(e);
+			saveFavorites();
 		});
 
 		if (o instanceof Entry) {
 			m.add(mi = new JMenuItem("Add Alarm"));
-			mi.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ev) {
-					Entry e = (Entry) o;
-					addAlarm(e.getStation());
-				}
+			mi.addActionListener((ActionEvent ev1) -> {
+				Entry e = (Entry) o;
+				addAlarm(e.getStation());
 			});
 			m.addSeparator();
 			if (tree != favorites) {
 				m.add(mi = new JMenuItem("Add to Favorites"));
-				mi.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						Entry e = (Entry) o;
-						List<Entry> friendData = frmod.getContents();
-						if (friendData.contains(e) == false) {
-							frmod.addData(e);
-							saveFavorites();
-						}
+				mi.addActionListener((ActionEvent ev1) -> {
+					Entry e = (Entry) o;
+					List<Entry> friendData = frmod.getContents();
+					if (friendData.contains(e) == false) {
+						frmod.addData(e);
+						saveFavorites();
 					}
 				});
 			}
 			if (tree == favorites) {
 				m.add(mi = new JMenuItem("Remove Entry"));
-				mi.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						Entry e = (Entry) o;
-						List<Entry> friendData = frmod.getContents();
-						// progress("Check remove for: "+e+
-						// ", friendData.contains(e): "+friendData.contains(e)
-						// );
-						if (tree == favorites) {
-							if (friendData.contains(e) == true) {
-								friendData.remove(e);
-								saveFavorites();
-								frmod.setData(friendData);
-							}
-						} else if (tree == stations) {
-						} else if (tree == stations) {
+				mi.addActionListener((ActionEvent ev1) -> {
+					Entry e = (Entry) o;
+					List<Entry> friendData = frmod.getContents();
+					// progress("Check remove for: "+e+
+					// ", friendData.contains(e): "+friendData.contains(e)
+					// );
+					if (tree == favorites) {
+						if (friendData.contains(e) == true) {
+							friendData.remove(e);
+							saveFavorites();
+							frmod.setData(friendData);
 						}
+					} else if (tree == stations) {
+					} else if (tree == stations) {
 					}
 				});
 				m.addSeparator();
 			}
 			m.add(mi = new JMenuItem("Connect"));
-			mi.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ev) {
-					final Entry e = (Entry) o;
-					new ComponentUpdateThread(tree) {
-						public Object construct() {
-							connectTo(e.getStation(), false);
-							return null;
-						}
-					}.start();
-				}
+			mi.addActionListener((ActionEvent ev1) -> {
+				final Entry e = (Entry) o;
+				new ComponentUpdateThread(tree) {
+					@Override
+					public Object construct() {
+						connectTo(e.getStation(), false);
+						return null;
+					}
+				}.start();
 			});
 			m.addSeparator();
 			m.add(mi = new JMenuItem("Info"));
-			mi.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ev) {
-					stationInfo(((Entry) o).getStation());
-				}
+			mi.addActionListener((ActionEvent ev1) -> {
+				stationInfo(((Entry) o).getStation());
 			});
 			if (((Entry) o).getStation().getIPAddr() == null)
 				mi.setEnabled(false);
@@ -2410,10 +2330,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		final JCheckBoxMenuItem item = new JCheckBoxMenuItem(act);
 		if (act instanceof LabeledToggleAction) {
 			final LabeledToggleAction la = (LabeledToggleAction) act;
-			la.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ev) {
-					item.setSelected(la.isSelected());
-				}
+			la.addActionListener((ActionEvent ev) -> {
+				item.setSelected(la.isSelected());
 			});
 		}
 		m.add(item);
@@ -2443,6 +2361,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Handle drop events on the favorites pane
 	 */
 	private class FavoritesTargetListener extends DropTargetAdapter {
+		@Override
 		public void drop(DropTargetDropEvent ev) {
 			progress("Dropped: " + ev);
 			Transferable tf = ev.getTransferable();
@@ -2473,72 +2392,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				} else {
 					ev.dropComplete(false);
 				}
-			} catch (Exception ex) {
+			} catch (UnsupportedFlavorException | IOException ex) {
 				reportException(ex);
 			}
 		}
 	}
 
-	class EntryDragRecoginizer implements DragGestureListener {
-		JTree tree;
-
-		public EntryDragRecoginizer(JTree tree) {
-			this.tree = tree;
-		}
-
-		public void dragGestureRecognized(DragGestureEvent ev) {
-			progress("Drag started: " + ev);
-			Point p = ev.getDragOrigin();
-			TreePath pth = tree.getPathForLocation(p.x, p.y);
-			if (pth == null)
-				return;
-			Object obj = pth.getLastPathComponent();
-			if (obj == null || obj instanceof Entry == false) {
-				return;
-			}
-			tree.setSelectionPath(pth);
-			final Entry nd = (Entry) obj;
-			dgs.startDrag(ev, DragSource.DefaultLinkDrop, (Image) null, new Point(0, 0),
-					// Transfer the node object.
-					new Transferable() {
-						public DataFlavor[] getTransferDataFlavors() {
-							return new DataFlavor[] { new DataFlavor(Entry.class, "Entry") };
-						}
-
-						public boolean isDataFlavorSupported(DataFlavor flav) {
-							return flav.equals(new DataFlavor(Entry.class, "Entry"));
-						}
-
-						public Object getTransferData(DataFlavor flav) {
-							return nd;
-						}
-					}, new DragSourceListener() {
-						public void dragEnter(DragSourceDragEvent evv) {
-						}
-
-						public void dragOver(DragSourceDragEvent evv) {
-						}
-
-						public void dropActionChanged(DragSourceDragEvent evv) {
-						}
-
-						public void dragExit(DragSourceEvent evv) {
-						}
-
-						public void dragDropEnd(DragSourceDropEvent evv) {
-						}
-					});
-		}
-	}
-
-	/**
-	 * Handle drag of text from the station data JTextComponent
-	 */
-	private class StationDataDragRecoginizer extends TextDragRecoginizer {
-		public StationDataDragRecoginizer(JTextComponent text) {
-			super(text);
-		}
-	}
 
 	// class xxStationDataDragRecoginizer implements DragGestureListener {
 	// JList list;
@@ -2590,72 +2449,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	// }
 	// }
 
-	/**
-	 * Text drag recognizer for text components
-	 */
-	private class TextDragRecoginizer implements DragGestureListener {
-		JTextComponent text;
-
-		public TextDragRecoginizer(JTextComponent text) {
-			this.text = text;
-		}
-
-		public void dragGestureRecognized(DragGestureEvent ev) {
-			Point p = ev.getDragOrigin();
-			final StationData nd = getDragCall(text, p);
-			if (nd == null)
-				return;
-			int w, h;
-			Graphics g = getGraphics();
-			Font f = new Font("serif", Font.PLAIN, 14);
-			FontMetrics fm = g.getFontMetrics(f);
-			w = fm.stringWidth(nd.getCall());
-			h = fm.getHeight();
-			Image img = createImage(w, h);
-			Graphics gr = img.getGraphics();
-			gr.setColor(Color.white);
-			gr.fillRect(0, 0, w, h);
-			gr.setColor(Color.blue);
-			gr.drawString(nd.getCall(), 0, fm.getMaxAscent());
-			progress("img: " + img + ", w: " + w + ", h: " + h + ", can drag? " + dgs.isDragImageSupported());
-			dgs.startDrag(ev, DragSource.DefaultLinkDrop, (Image) img, new Point(0, 0),
-					// Transfer the node object.
-					new Transferable() {
-						public DataFlavor[] getTransferDataFlavors() {
-							return new DataFlavor[] { new DataFlavor(StationData.class, "StationData") };
-						}
-
-						public boolean isDataFlavorSupported(DataFlavor flav) {
-							return flav.equals(new DataFlavor(StationData.class, "StationData"));
-						}
-
-						public Object getTransferData(DataFlavor flav) {
-							return nd;
-						}
-					}, new DragSourceListener() {
-						public void dragEnter(DragSourceDragEvent evv) {
-						}
-
-						public void dragOver(DragSourceDragEvent evv) {
-						}
-
-						public void dropActionChanged(DragSourceDragEvent evv) {
-						}
-
-						public void dragExit(DragSourceEvent evv) {
-						}
-
-						public void dragDropEnd(DragSourceDropEvent evv) {
-						}
-					});
-		}
-	}
 
 	/**
 	 * When a drag occurs out of the passwd text component at the indicated
 	 * point, get the associated station data
+	 * @param text
+	 * @param p
+	 * @return 
 	 */
-	private StationData getDragCall(JTextComponent text, Point p) {
+	public StationData getDragCall(JTextComponent text, Point p) {
 		int position = text.viewToModel(p);
 		int start = position;
 		if (start > 0)
@@ -2663,7 +2465,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		int end = position;
 		Document d = text.getDocument();
 		int len = d.getLength();
-		String line = null;
+		String line = "";
 		try {
 			while (start > 0) {
 				String s = d.getText(start, 1);
@@ -2681,6 +2483,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 			line = d.getText(start, end - start).trim();
 		} catch (BadLocationException ex) {
+			reportException(ex);
 		}
 		++start;
 		String stdata = line;
@@ -2693,44 +2496,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		text.setSelectionStart(start);
 		text.setSelectionEnd(end);
 		return StationData.stationFor(stdata); // (StationData)obj;
-	}
-
-	/**
-	 * Handle drops onto the info pane which are taken as connection requests.
-	 */
-	private class InfoPaneTargetListener extends DropTargetAdapter {
-		public void dragOver(DropTargetDragEvent ev) {
-			DataFlavor[] arr = ev.getCurrentDataFlavors();
-			DataFlavor reqFlav = new DataFlavor(Entry.class, "Entry");
-			for (int i = 0; i < arr.length; ++i) {
-				if (arr[i].equals(reqFlav))
-					return;
-			}
-			ev.rejectDrag();
-		}
-
-		public void drop(final DropTargetDropEvent ev) {
-			try {
-				Transferable tf = ev.getTransferable();
-				final Object obj = tf.getTransferData(new DataFlavor(Entry.class, "Entry"));
-				ev.dropComplete(obj instanceof Entry);
-				if (obj instanceof Entry) {
-					final Entry ent = (Entry) obj;
-					new ComponentUpdateThread((JComponent) null) {
-						public Object construct() {
-							try {
-								connectTo(ent.getStation(), false);
-							} catch (Exception ex) {
-								reportException(ex);
-							}
-							return null;
-						}
-					}.start();
-				}
-			} catch (Exception ex) {
-				reportException(ex);
-			}
-		}
 	}
 
 	JLabel cursite;
@@ -2841,12 +2606,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	 * Handler clas for received audio data available.
 	 */
 	class SysopRecvAvailControl implements Runnable, SerialPortEventListener, LinkEventListener<Object> {
-		SerialPort port;
-		String rcvSerPort;
-		boolean done;
+		volatile SerialPort port;
+		final String rcvSerPort;
+		volatile boolean done;
+		volatile Thread th;
 
+		@Override
 		public void processEvent(LinkEvent<Object> ev) {
-			log.finer("Got LinkEvent: " + ev);
+			log.log(Level.FINER, "Got LinkEvent: {0}", ev);
 			switch (ev.getType()) {
 			case VOX_CLOSE_EVENT:
 				log.info("Vox receive closed");
@@ -2858,24 +2625,29 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 
 		public SysopRecvAvailControl(String rcvSerPort) {
-			log.info("startPTTControl: " + rcvSerPort);
+			log.log(Level.INFO, "startPTTControl: {0}", rcvSerPort);
 			if (pr.isUserMode()) {
 				throw new IllegalStateException("Not in Sysop mode");
 			}
 			this.rcvSerPort = rcvSerPort;
 			openPort();
-			new Thread(this).start();
+		}
+		
+		public void start() {
+			th = new Thread(this);
+			th.start();
 		}
 
 		public void setDone(boolean how) {
 			done = how;
 		}
 
-		private Object notifyLock = new Object();
-		private boolean isCTS, isDSR, isCD;
+		final private Object notifyLock = new Object();
+		private volatile boolean isCTS, isDSR, isCD;
 
+		@Override
 		public void serialEvent(SerialPortEvent ev) {
-			log.fine("SerialEvent: " + ev);
+			log.log(Level.FINE, "SerialEvent: {0}", ev);
 			switch (ev.getEventType()) {
 			case SerialPortEvent.CTS:
 				isCTS = ev.getNewValue();
@@ -2907,13 +2679,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 		}
 
+		@Override
 		public void run() {
 			try {
 				port.addEventListener(this);
 				port.notifyOnCTS(true);
 				port.notifyOnDSR(true);
 				port.notifyOnCarrierDetect(true);
-			} catch (TooManyListenersException ex) {
+			} catch (TooManyListenersException | RuntimeException ex) {
 				reportException(ex);
 			}
 
@@ -2922,7 +2695,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				synchronized (notifyLock) {
 					try {
 						notifyLock.wait(5000);
-					} catch (Exception ex) {
+					} catch (InterruptedException ex) {
 					}
 				}
 				if (pr.isRxCtrlSerialcd()) {
@@ -2955,25 +2728,25 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			// true, LinkEvent.VOX_CLOSE_EVENT, (int)average );
 			// mgr.je.sendEvent( le );
 			// }
-			log.info("SysopRecvAvailControl togglePtt: " + how);
+			log.log(Level.INFO, "SysopRecvAvailControl togglePtt: {0}", how);
 
 			setRxIndicator(how);
 			setMode((how ^ pr.isRxCtrlInvertsense()) ? LinkMode.MODE_RECEIVE : LinkMode.MODE_IDLE);
 		}
 	}
 
-	Hashtable<String, SerialPort> ports = new Hashtable<String, SerialPort>();
+	Map<String, SerialPort> ports = new HashMap<>();
 
 	protected SerialPort getOpenedPort(String portName) {
 		SerialPort port;
-		if ((port = (SerialPort) ports.get(portName)) != null) {
+		if ((port = ports.get(portName)) != null) {
 			return port;
 		}
 
 		CommPortIdentifier cp = getCommPort(portName);
 		try {
 			port = (SerialPort) cp.open("Javecho sysop", 10);
-		} catch (Exception ex) {
+		} catch (PortInUseException | RuntimeException ex) {
 			IllegalArgumentException iae = new IllegalArgumentException("Port already in use: " + ex);
 			throw ((IllegalArgumentException) iae.initCause(ex));
 		}
@@ -3021,33 +2794,34 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				if (node instanceof Entry) {
 					Entry ent = (Entry) node;
 					StationData sd = ent.getStation();
-					return new Boolean(connectTo(sd, false));
+					return connectTo(sd, false);
 				}
-				return new Boolean(false);
+				return false;
 			}
 
 			@Override
 			public void finished() {
 				Boolean b = getValue();
-				getAction("Conn").setEnabled(!b.booleanValue());
+				getAction("Conn").setEnabled(!b);
 			}
 		}.start();
 	}
 
 	private void disconnectFromSelected() {
 		final Object node = selectedNode();
-		log.finer("disconnect selected is: " + node);
+		log.log(Level.FINER, "disconnect selected is: {0}", node);
 		if (node instanceof Entry) {
 			final Entry ent = (Entry) node;
 			final StationData sd = ent.getStation();
-			log.fine("Disconnecting from: " + sd.getIPAddr());
+			log.log(Level.FINE, "Disconnecting from: {0}", sd.getIPAddr());
 			new ComponentUpdateThread<Void>(getAction("Disc")) {
+				@Override
 				public Void construct() {
 					try {
 						ssa.disconnectFrom(sd.getIPAddr());
-						sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT,
+						sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT,
 								ssa.getConnectCount(), sd));
-					} catch (Exception ex) {
+					} catch (IOException | RuntimeException ex) {
 						reportException(ex);
 					}
 					return null;
@@ -3061,7 +2835,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	public void setTxMode(boolean how) {
-		log.fine("set TXMode: " + how);
+		log.log(Level.FINE, "set TXMode: {0}", how);
 		txActive = how;
 		if (txActive) {
 			setMode(LinkMode.MODE_TRANSMIT);
@@ -3086,20 +2860,18 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	};
 
 	private void showStatus(final String str) {
-		runInSwing(new Runnable() {
-			public void run() {
-				oinfo.setText(str);
-			}
+		runInSwing(() -> {
+			oinfo.setText(str);
 		});
 	}
 
-	static void progress(final String str) {
+	public void progress(final String str) {
 		proglog.log(PROGRESS_LEVEL, str);
 		// if( pr.isAudioTrace() )
 		// System.out.println(str);
 	}
 
-	Object bindlock = new Object();
+	final Object bindlock = new Object();
 	boolean areBinding = false;
 	EventPackets ep;
 
@@ -3108,19 +2880,18 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		boolean badhost = true;
 		String s = null;
 		int trycnt = 0;
+		log.info("Starting logon...");
 		while (!connected && !cancelled[0] && badhost) {
 			for (int i = 0; !connected && !cancelled[0] && i < pr.servers.size(); ++i) {
 				s = (String) pr.servers.get(i);
 				progress("Trying (host['" + i + "' of '" + pr.servers.size() + "']=" + badhost + "): " + s);
 				final String fs = s;
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						if (lab != null) {
-							showStatus(fs);
-							lab.setText(fs);
-							lab.revalidate();
-							lab.getParent().repaint();
-						}
+				SwingUtilities.invokeLater(() -> {
+					if (lab != null) {
+						showStatus(fs);
+						lab.setText(fs);
+						lab.revalidate();
+						lab.getParent().repaint();
 					}
 				});
 				try {
@@ -3152,39 +2923,34 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							ConnectException e = new ConnectException(s);
 							e.initCause(ex);
 							reportException(e, false);
-							staList = new Vector<Entry>();
-							runInSwing(new Runnable() {
-								public void run() {
-									trmod.setData(staList);
-									locmod.setData(staList);
-								}
+							staList = new ArrayList<>();
+							runInSwing(() -> {
+								trmod.setData(staList);
+								locmod.setData(staList);
 							});
 							badhost = false;
 							try {
 								Thread.sleep(3000);
-							} catch (Exception exx) {
+							} catch (InterruptedException | RuntimeException exx) {
+								log.log(Level.SEVERE, ex.toString(), ex );
 							}
 							continue;
 						} catch (UnknownHostException ex) {
 							reportException(ex, false);
-							staList = new Vector<Entry>();
-							runInSwing(new Runnable() {
-								public void run() {
-									trmod.setData(staList);
-									locmod.setData(staList);
-								}
+							staList = new ArrayList<>();
+							runInSwing(() -> {
+								trmod.setData(staList);
+								locmod.setData(staList);
 							});
 							badhost = true;
 							continue;
 						} catch (final IOException ex) {
 							reportException(ex, false);
-							staList = new Vector<Entry>();
-							runInSwing(new Runnable() {
-								public void run() {
-									trmod.setData(staList);
-									locmod.setData(staList);
-									oinfo.setText(ex + "");
-								}
+							staList = new ArrayList<>();
+							runInSwing(() -> {
+								trmod.setData(staList);
+								locmod.setData(staList);
+								oinfo.setText(ex + "");
 							});
 							badhost = true;
 							break;
@@ -3193,7 +2959,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					} else {
 						throw new NullPointerException("No data provided");
 					}
-				} catch (Exception ex) {
+				} catch ( RuntimeException ex) {
 					reportException(ex);
 				}
 			}
@@ -3208,7 +2974,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				}
 				try {
 					Thread.sleep(2000);
-				} catch (Exception ex) {
+				} catch (InterruptedException | RuntimeException ex) {
+					log.log(Level.SEVERE, ex.toString(), ex );
 				}
 			}
 		}
@@ -3224,6 +2991,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		// }
 
 		new Thread() {
+			@Override
 			public void run() {
 				synchronized (bindlock) {
 					if (areBinding || ep != null)
@@ -3243,13 +3011,17 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					try {
 						progress("Create packet listener");
 						ep = new EventPackets(Javecho.this, new RtpRtcpHandler() {
+							@Override
 							public void handleData(String ipaddr, byte[] data, int len) {
 								if (ssa != null)
 									ssa.handleData(ipaddr, data, len);
+								log.info("Got data from "+ipaddr+", "+len+" bytes");
 							}
 
+							@Override
 							public void handleControl(String ipaddr, byte[] data, int len) {
 								doControl(ipaddr, data, len);
+								log.info("Got control from "+ipaddr+", "+len+" bytes");
 							}
 						}, pr);
 						progress("setup packet listener");
@@ -3259,7 +3031,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						bound = true;
 					} catch (BindException ex) {
 						reportException(ex);
-					} catch (Exception ex) {
+					} catch (IOException | RuntimeException ex) {
 						reportException(ex);
 					}
 				}
@@ -3269,12 +3041,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	void reportException(Throwable ex, boolean show) {
+		log.log(Level.SEVERE, ex.toString(), ex);
 		String cl = ex.getClass().getName();
 		int idx = cl.lastIndexOf('.');
 		cl = cl.substring(idx + 1);
 		reportException(ex, cl + " Occured", JOptionPane.ERROR_MESSAGE, show);
 	}
 
+	@Override
 	public void reportException(Throwable ex) {
 		reportException(ex, true);
 	}
@@ -3284,33 +3058,36 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	private void reportException(final Throwable ex, final String title, final int type, boolean show) {
-		log.log(Level.WARNING, ex.toString(), ex);
+		if( ex != null )
+			log.log(Level.WARNING, ex.toString(), ex);
 		// Don't raise dialog in sysop mode either
 		if (!show || pr.isUserMode() == false)
 			return;
-		String msg = ex.getMessage();
-		if (msg == null)
-			msg = ex.toString();
-		else
-			msg = ex.getClass().getName() + ":\n" + msg;
-		Throwable t = null;
-		Throwable et = ex;
-		while ((t = et.getCause()) != null) {
-			if (t != null) {
-				String str = t.getMessage();
-				if (str == null)
-					str = t.toString();
-				else
-					str = t.getClass().getName() + "\n" + str;
-				msg += "\n" + str;
+		String msg = "";
+		if( ex != null ) {
+			msg += ex.getMessage();
+			if (msg.equals(""))
+				msg = ex.toString();
+			else
+				msg = ex.getClass().getName() + ":\n" + msg;
+			Throwable t;
+
+			Throwable et = ex;
+			while (et != null && (t = et.getCause()) != null) {
+				if (t != null) {
+					String str = t.getMessage();
+					if (str == null)
+						str = t.toString();
+					else
+						str = t.getClass().getName() + "\n" + str;
+					msg += "\n" + str;
+				}
+				et = t;
 			}
-			et = t;
 		}
 		final String tmsg = msg;
-		runInSwing(new Runnable() {
-			public void run() {
-				showMessageDialog(tmsg, title, type);
-			}
+		runInSwing(() -> {
+			showMessageDialog(tmsg, title, type);
 		});
 	}
 
@@ -3321,10 +3098,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	JEditorPane pn;
-	Object olock = new Object();
+	final Object olock = new Object();
 
 	void showMessages(String title, String hdr, List<?> entries) {
-		if (entries.size() == 0)
+		if (entries.isEmpty())
 			return;
 		String str = "<html><body>";
 		String body = "";
@@ -3351,10 +3128,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				showMessageDialog(pn, title, JOptionPane.INFORMATION_MESSAGE);
 			} else {
 				final String fstr = str;
-				runInSwing(new Runnable() {
-					public void run() {
-						pn.setText(fstr);
-					}
+				runInSwing(() -> {
+					pn.setText(fstr);
 				});
 				return;
 			}
@@ -3403,10 +3178,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				List<Entry> v = frmod.data;
 
-				Preferences exn = prefs.node("export/friends");
+				//Preferences exn = prefs.node("export/friends");
 
 				boolean withIP = prefs.getBoolean("withIp", false);
 				boolean withHeader = prefs.getBoolean("withHeader", true);
@@ -3421,32 +3197,32 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				final JTextField file = new JTextField(toFile);
 				pk.pack(file).gridx(1).gridy(y).fillx();
 				final JButton change = new JButton("Browse...");
-				change.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						JFileChooser f = new JFileChooser();
-						f.setCurrentDirectory(new File(dir));
-						f.setSelectedFile(new File(new File(dir), toFile));
-						f.setFileFilter(new FileFilter() {
-							public boolean accept(File f) {
-								if (f.isDirectory())
-									return true;
-								return f.getName().toLowerCase().endsWith(".csv");
-							}
-
-							public String getDescription() {
-								return "exported stations (.csv)";
-							}
-						});
-						f.setDialogTitle("Select Export File");
-						if (f.showOpenDialog(dlg) == JFileChooser.APPROVE_OPTION) {
-							File ff = f.getSelectedFile();
-							file.setText(ff.toString());
-							String d = ff.getParent();
-							String fl = ff.getName();
-							prefs.put("toDir", d);
-							prefs.put("toFile", fl);
-
+				change.addActionListener((var ev1) -> {
+					JFileChooser f = new JFileChooser();
+					f.setCurrentDirectory(new File(dir));
+					f.setSelectedFile(new File(new File(dir), toFile));
+					f.setFileFilter(new javax.swing.filechooser.FileFilter() {
+						@Override
+						public boolean accept(File f) {
+							if (f.isDirectory())
+								return true;
+							return f.getName().toLowerCase().endsWith(".csv");
 						}
+						
+						@Override
+						public String getDescription() {
+							return "exported stations (.csv)";
+						}
+					});
+					f.setDialogTitle("Select Export File");
+					if (f.showOpenDialog(dlg) == JFileChooser.APPROVE_OPTION) {
+						File ff = f.getSelectedFile();
+						file.setText(ff.toString());
+						String d = ff.getParent();
+						String fl = ff.getName();
+						prefs.put("toDir", d);
+						prefs.put("toFile", fl);
+						
 					}
 				});
 				pk.pack(change).gridx(2).gridy(y);
@@ -3457,19 +3233,16 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				final JButton okay = new JButton("Okay");
 				final JButton cancel = new JButton("Cancel");
 				final boolean cancelled[] = new boolean[1];
-				okay.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						cancelled[0] = false;
-						dlg.setVisible(false);
-					}
+				okay.addActionListener((ActionEvent ev1) -> {
+					cancelled[0] = false;
+					dlg.setVisible(false);
 				});
-				cancel.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent ev) {
-						cancelled[0] = true;
-						dlg.setVisible(false);
-					}
+				cancel.addActionListener((ActionEvent ev1) -> {
+					cancelled[0] = true;
+					dlg.setVisible(false);
 				});
 				dlg.addWindowListener(new WindowAdapter() {
+					@Override
 					public void windowClosing(WindowEvent ev) {
 						cancelled[0] = true;
 					}
@@ -3488,9 +3261,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				String name = file.getText();
 				try {
 
-					FileWriter fw = new FileWriter(name);
-					try {
-						PrintWriter op = new PrintWriter(fw);
+					try (FileWriter fw = new FileWriter(name); PrintWriter op = new PrintWriter(fw)) {
 						if (header.isSelected()) {
 							op.println("Type," + StationData.exportHeader(withIP));
 						}
@@ -3499,11 +3270,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							StationData sd = e.getStation();
 							op.println(StationData.quotedCSV(Entry.typeName(e.getType())) + "," + sd.export(withIP));
 						}
-						op.close();
-					} finally {
-						fw.close();
 					}
-				} catch (Exception ex) {
+				} catch (IOException | RuntimeException ex) {
 					reportException(ex);
 				}
 			}
@@ -3515,10 +3283,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				showMessages("About Javecho", null,
-						new Vector<String>(Arrays.asList(
-								new String[] { "Javecho v" + version, "Copyright (c) 2002-2004, Gregg Wonderly - W5GGW",
+						new ArrayList<>(Arrays.asList(new String[] { "Javecho v" + VERSION, "Copyright (c) 2002-2023, Gregg Wonderly - W5GGW",
 										"All rights Reserved", "Questions to w5ggw@arrl.net" })));
 			}
 		});
@@ -3529,6 +3297,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				showMessages("System Messages", "The following information was returned by " + "the remote server:",
 						sysmsg);
@@ -3541,6 +3310,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				showCallSigns();
 			}
@@ -3552,6 +3322,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				alarmMgr.showAlarmLog();
 			}
@@ -3563,11 +3334,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
-				log.finest("action: current txmode is: " + getTxMode());
+				log.log(Level.FINEST, "action: current txmode is: {0}", getTxMode());
 				new ComponentUpdateThread(this) {
+					@Override
 					public Object construct() {
 						try {
+							log.info("Toggling TX mode from: "+getTxMode()+" to "+(!getTxMode()));
 							setTxMode(!getTxMode());
 						} catch (InvalidSoundSystemConfigurationException ex) {
 							reportException(ex);
@@ -3582,8 +3356,8 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							data[arr.length + 1] = '\n';
 							data[arr.length + 2] = 0;
 							try {
-								ssa.sendPacket(data, ssa.CHAT_TYPE);
-							} catch (Exception exx) {
+								ssa.sendPacket(data, ConnectionManager.CHAT_TYPE);
+							} catch (IOException | RuntimeException exx) {
 								reportException(exx);
 							}
 						}
@@ -3599,6 +3373,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				try {
 					connectToChoose();
@@ -3615,6 +3390,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 			}
 		});
@@ -3625,10 +3401,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
-				new SysopSettings(Javecho.this, pr);
-				log.info("isUserMode ? " + pr.isUserMode());
-				log.info("isRxCtrlVox ? " + pr.isRxCtrlVox());
+				SysopSettings sysopSettings = new SysopSettings(Javecho.this, pr);
+				sysopSettings.performDialog();
+				log.log(Level.INFO, "isUserMode ? {0}", pr.isUserMode());
+				log.log(Level.INFO, "isRxCtrlVox ? {0}", pr.isRxCtrlVox());
 				try {
 					average.setVox(pr.isUserMode() ? false : pr.isRxCtrlVox());
 				} catch (Exception ex) {
@@ -3643,6 +3421,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				try {
 					connectToSelected();
@@ -3663,8 +3442,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				new ComponentUpdateThread(getAction("Disc")) {
+					@Override
 					public Object construct() {
 						progress("Doing disconnect");
 						try {
@@ -3677,7 +3458,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 								progress("Disconnect from ?");
 								disconnectFrom();
 							}
-						} catch (Exception ex) {
+						} catch (IOException | RuntimeException ex) {
 							reportException(ex);
 						} finally {
 							try {
@@ -3699,6 +3480,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				// if( !connected ) {
 				// logonAndSetup();
@@ -3714,6 +3496,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				Object o = selectedNode();
 				if (o instanceof Entry == false)
@@ -3729,48 +3512,48 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
-				new FindStationDialog(Javecho.this, new FindHandler() {
-					public void locate(String val) {
-						Vector<Entry> v = new Vector<Entry>();
-						val = val.toLowerCase();
-						for (int i = 0; i < staList.size(); ++i) {
-							Entry e = (Entry) staList.get(i);
-							if (e.getStation().getCall().toLowerCase().startsWith(val)) {
-								v.addElement(e);
-							}
-						}
-						if (v.size() == 0) {
-							Toolkit.getDefaultToolkit().beep();
-							return;
-						}
-						stations.clearSelection();
-						stTabs.setSelectedIndex(1);
-						boolean found = false;
-						// TreeModel mod = stations.getModel();
-						Object root = trmod.getRoot();
-						for (int i = 0; i < v.size(); ++i) {
-							Entry e = v.elementAt(i);
-							if (searchTree(stations, e, trmod, root, new TreePath(new Object[] { root }))) {
-								found = true;
-							}
-							// for( int j = 0; j < count; ++j ) {
-							// TreePath p = stations.getPathForRow( j );
-							// Object o = p.getLastPathComponent();
-							// if( o == e ) {
-							// stations.addSelectionPath( p );
-							// stations.expandPath(p.getParentPath());
-							// stations.makeVisible(p);
-							// found = true;
-							// break done;
-							// }
-							// }
-						}
-						if (!found) {
-							Toolkit.getDefaultToolkit().beep();
+				FindStationDialog findStationDialog = new FindStationDialog(Javecho.this, (String val) -> {
+					List<Entry> v = new ArrayList<>();
+					val = val.toLowerCase();
+					for (int i = 0; i < staList.size(); ++i) {
+						Entry e = (Entry) staList.get(i);
+						if (e.getStation().getCall().toLowerCase().startsWith(val)) {
+							v.add(e);
 						}
 					}
+					if (v.isEmpty()) {
+						Toolkit.getDefaultToolkit().beep();
+						return;
+					}
+					stations.clearSelection();
+					stTabs.setSelectedIndex(1);
+					boolean found = false;
+					// TreeModel mod = stations.getModel();
+					Object root = trmod.getRoot();
+					for (int i = 0; i < v.size(); ++i) {
+						Entry e = v.get(i);
+						if (searchTree(stations, e, trmod, root, new TreePath(new Object[] { root }))) {
+							found = true;
+						}
+						// for( int j = 0; j < count; ++j ) {
+						// TreePath p = stations.getPathForRow( j );
+						// Object o = p.getLastPathComponent();
+						// if( o == e ) {
+						// stations.addSelectionPath( p );
+						// stations.expandPath(p.getParentPath());
+						// stations.makeVisible(p);
+						// found = true;
+						// break done;
+						// }
+						// }
+					}
+					if (!found) {
+						Toolkit.getDefaultToolkit().beep();
+					}
 				});
+				findStationDialog.setVisible(true);
 			}
 		});
 
@@ -3780,6 +3563,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				checkExit();
 			}
@@ -3791,6 +3575,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				alarmMgr.showAlarmEditor();
 			}
@@ -3802,12 +3587,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				progress("Setup...");
-				new SetupDialog(Javecho.this, pr, false);
+				SetupDialog setupDialog = new SetupDialog(Javecho.this, pr, false);
 				getAction("Sysop Settings...").setEnabled(!pr.isUserMode());
 				setTitle("JavEcho - " + pr.getCallSign());
 				average.setVox(pr.isUserMode() ? false : pr.isRxCtrlVox());
+				setupDialog.performDialog();
 			}
 		});
 
@@ -3817,8 +3604,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
-				new PreferencesDialog(Javecho.this, pr);
+				PreferencesDialog preferencesDialog = new PreferencesDialog(Javecho.this, pr);
+				preferencesDialog.performDialog();
 			}
 		});
 
@@ -3828,16 +3617,18 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				try {
 					setSelected(!isSelected());
 					notifyListeners();
 					progress("Busy: " + isSelected());
 					new ComponentUpdateThread(this) {
+						@Override
 						public Object construct() {
 							try {
 								updateLogon();
-							} catch (Exception ex) {
+							} catch (IOException | RuntimeException ex) {
 								reportException(ex);
 							}
 							return null;
@@ -3855,6 +3646,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				if (cons != null) {
 					cons.setVisible(true);
@@ -3869,6 +3661,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				if (stsumm != null) {
 					stsumm.setVisible(true);
@@ -3901,13 +3694,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				if (helpFrame == null) {
 					helpFrame = new JFrame("Javecho Web Site");
 					HTMLBrowser br = new HTMLBrowser(helpFrame, Javecho.this);
 					try {
 						br.setPage(new URL("http://javecho.dev.java.net"));
-					} catch (Exception ex) {
+					} catch (IOException | RuntimeException ex) {
 						reportException(ex);
 					}
 					helpFrame.setContentPane(br);
@@ -3915,6 +3709,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					helpFrame.setSize(500, 300);
 					helpFrame.setLocationRelativeTo(Javecho.this);
 					helpFrame.addWindowListener(new WindowAdapter() {
+						@Override
 						public void windowClosing(WindowEvent ev) {
 							helpFrame = null;
 						}
@@ -3932,13 +3727,14 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			 */
 			private static final long serialVersionUID = 1L;
 
+			@Override
 			public void actionPerformed(ActionEvent ev) {
 				if (helpFrame == null) {
 					helpFrame = new JFrame("Echolink Help");
 					HTMLBrowser br = new HTMLBrowser(Javecho.this);
 					try {
 						br.setPage(new URL("http://www.echolink.org/help"));
-					} catch (Exception ex) {
+					} catch (IOException | RuntimeException ex) {
 						reportException(ex);
 					}
 					helpFrame.setContentPane(br);
@@ -3946,6 +3742,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					helpFrame.setSize(500, 300);
 					helpFrame.setLocationRelativeTo(Javecho.this);
 					helpFrame.addWindowListener(new WindowAdapter() {
+						@Override
 						public void windowClosing(WindowEvent ev) {
 							helpFrame = null;
 						}
@@ -3964,7 +3761,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	private boolean searchTree(JTree stations, Entry e, TreeModel mod, Object root, TreePath p) {
 		boolean found = false;
-		log.finest("Checking in:[" + root + "]: " + p);
+		log.log(Level.FINEST, "Checking in:[{0}]: {1}", new Object[]{root, p});
 		for (int i = 0; i < mod.getChildCount(root); ++i) {
 			Object nd = mod.getChild(root, i);
 			if (mod.isLeaf(nd)) {
@@ -3976,7 +3773,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					tp[p.getPath().length] = nd;
 					TreePath pp = new TreePath(tp);
 					try {
-						log.finest("selecting path: " + pp);
+						log.log(Level.FINEST, "selecting path: {0}", pp);
 						stations.addSelectionPath(pp);
 						stations.expandPath(pp.getParentPath());
 						stations.makeVisible(pp);
@@ -3994,7 +3791,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				System.arraycopy(p.getPath(), 0, tp, 0, p.getPath().length);
 				tp[p.getPath().length] = nd;
 				TreePath pp = new TreePath(tp);
-				log.finest("old path: " + p + ", new path: " + pp);
+				log.log(Level.FINEST, "old path: {0}, new path: {1}", new Object[]{p, pp});
 				found |= searchTree(stations, e, mod, nd, pp);
 			}
 		}
@@ -4005,7 +3802,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		String stname = station.getIPAddr();
 		try {
 			stname = InetAddress.getByName(stname).getHostName();
-		} catch (Exception ex) {
+		} catch (UnknownHostException | RuntimeException ex) {
 			stname = ex.toString();
 		}
 		String str = "Station:  " + station.getCall() + "\n\n" + "Address:  " + station.getIPAddr() + "\n\n"
@@ -4021,6 +3818,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				 */
 				private static final long serialVersionUID = 1L;
 
+				@Override
 				public void actionPerformed(ActionEvent ev) {
 					showMessageDialog("Action Not Implemented");
 				}
@@ -4035,6 +3833,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		Throwable ex = new Throwable("refreshing list");
 		log.log(Level.FINE, ex.toString(), ex);
 		new ComponentUpdateThread<Void>(getAction("Refresh")) {
+			@Override
 			public Void construct() {
 				doListRefresh(wait);
 				return null;
@@ -4043,7 +3842,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	private void doListRefresh(final boolean wait) {
-		Component[] comps = null;
+		Component[] comps;
 		if (stsumm == null)
 			comps = new Component[] { stations, favorites, stinfo };
 		else
@@ -4060,6 +3859,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		new ComponentUpdateThread(comps) {
 
+			@Override
 			public Object construct() {
 				int idx = 0;
 				try {
@@ -4074,14 +3874,13 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							boolean cancelled[] = new boolean[1];
 							logon(cursite, cancelled);
 							if (!Javecho.this.connected || cancelled[0]) {
-								log.info("returning from connect: " + Javecho.this.connected + ", cancelled: "
-										+ cancelled[0]);
+								log.log(Level.INFO, "returning from connect: {0}, cancelled: {1}", new Object[]{Javecho.this.connected, cancelled[0]});
 								return null;
 							}
 						}
 						curhost = s = (String) pr.servers.get(idx);
 						progress("try logon to " + s);
-						log.info("Trying login to: " + s);
+						log.log(Level.INFO, "Trying login to: {0}", s);
 						l.setText("Trying Server: " + s);
 						acc.setup(s);
 						try {
@@ -4102,19 +3901,21 @@ public class Javecho extends JFrame implements ExceptionHandler {
 							log.log(Level.WARNING, ex.toString(), ex);
 							try {
 								Thread.sleep(2000);
-							} catch (Exception exx) {
+							} catch (InterruptedException exx) {
+								log.log(Level.FINE, exx.toString(), exx );
 							}
 						} catch (IOException ex) {
 							log.log(Level.WARNING, ex.toString(), ex);
 							try {
 								Thread.sleep(2000);
-							} catch (Exception exx) {
+							} catch (InterruptedException exx) {
+								log.log(Level.FINE, exx.toString(), exx );
 							}
 							idx = (idx + 1) % pr.servers.size();
 						}
 					} while (!connected);
 
-					log.info("Got connected to: " + s + ", sock: " + logonSock);
+					log.log(Level.INFO, "Got connected to: {0}, sock: {1}", new Object[]{s, logonSock});
 					l.setText("Requesting Station List...");
 					List<Entry> v = acc.getList(pr.servers, s, ret, logonSock);
 					site = ret[0];
@@ -4131,21 +3932,25 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				return null;
 			}
 
+			@Override
 			public void finished() {
 				try {
 					if (getValue() != null) {
-						log.finest("Found " + staList.size() + " stations");
+						log.log(Level.FINEST, "Found {0} stations", staList.size());
 						new ComponentUpdateThread<Void>(locations) {
+							@Override
 							public void setup() {
 								super.setup();
 								locations.setToolTipText("Sorting Stations...");
 							}
 
+							@Override
 							public Void construct() {
 								locmod.setData(staList);
 								return null;
 							}
 
+							@Override
 							public void finished() {
 								super.finished();
 								locations.setToolTipText("");
@@ -4227,12 +4032,10 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		grp.add(t2);
 		// grp.add(t3);
 
-		ActionListener lis = new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				call.setEnabled(t1.isSelected());
-				num.setEnabled(t2.isSelected());
-				// ip.setEnabled( t3.isSelected() );
-			}
+		ActionListener lis = (ActionEvent ev) -> {
+			call.setEnabled(t1.isSelected());
+			num.setEnabled(t2.isSelected());
+			// ip.setEnabled( t3.isSelected() );
 		};
 		t1.setSelected(true);
 		lis.actionPerformed(new ActionEvent(t1, 1, ""));
@@ -4260,6 +4063,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	static class GrayedTextField extends JTextField {
 		private static final long serialVersionUID = 1L;
 
+		@Override
 		public void setEnabled(boolean how) {
 			super.setEnabled(how);
 			setOpaque(how);
@@ -4286,14 +4090,17 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				sz = super.getIconHeight();
 		}
 
+		@Override
 		public int getIconWidth() {
 			return sz;
 		}
 
+		@Override
 		public int getIconHeight() {
 			return sz;
 		}
 
+		@Override
 		public void paintIcon(Component c, Graphics g, int x, int y) {
 			// new Throwable().printStackTrace();
 			int cx = x;
@@ -4310,20 +4117,20 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 	static abstract class LabeledToggleAction extends LabeledAction {
 		private static final long serialVersionUID = 1L;
-		boolean sel;
-		Vector<ActionListener> lis;
+		private volatile boolean sel;
+		final List<ActionListener> lis;
 
 		public void addActionListener(ActionListener l) {
-			lis.addElement(l);
+			lis.add(l);
 		}
 
 		public void removeActionListener(ActionListener l) {
-			lis.removeElement(l);
+			lis.remove(l);
 		}
 
 		private void notifyListeners(ActionEvent ev) {
 			for (int i = 0; i < lis.size(); ++i) {
-				ActionListener al = lis.elementAt(i);
+				ActionListener al = lis.get(i);
 				al.actionPerformed(ev);
 			}
 		}
@@ -4342,27 +4149,27 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		public LabeledToggleAction(String desc) {
 			super(desc);
-			lis = new Vector<ActionListener>();
+			lis = new ArrayList<>();
 		}
 
 		public LabeledToggleAction(Icon icon, String desc) {
 			super(icon, desc);
-			lis = new Vector<ActionListener>();
+			lis = new ArrayList<>();
 		}
 
 		public LabeledToggleAction(String name, String desc) {
 			super(name, desc);
-			lis = new Vector<ActionListener>();
+			lis = new ArrayList<>();
 		}
 
 		public LabeledToggleAction(String name, String desc, boolean enabled) {
 			super(name, desc, enabled);
-			lis = new Vector<ActionListener>();
+			lis = new ArrayList<>();
 		}
 
 		public LabeledToggleAction(Icon icon, String desc, boolean enabled) {
 			super(icon, desc, enabled);
-			lis = new Vector<ActionListener>();
+			lis = new ArrayList<>();
 		}
 	}
 
@@ -4412,7 +4219,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			if (((Entry) v.get(i)).getStation().isBusy())
 				++cnt;
 		}
-		if (v.size() == 0)
+		if (v.isEmpty())
 			return 0;
 		return cnt * 100 / v.size();
 	}
@@ -4434,7 +4241,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 	}
 
 	void updateLogon(boolean isConf, String name) throws IOException {
-		;
 		// if( ssa.isConnected() == false )
 		// acc.updateLogon( pr.getQTH(), false );
 
@@ -4454,6 +4260,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		// ).printStackTrace();
 		if (!ssa.isConnected()) {
 			new ComponentUpdateThread<Void>((JComponent) null) {
+				@Override
 				public void setup() {
 					super.setup();
 					conn.setText("");
@@ -4463,10 +4270,11 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					setTxMode(false);
 				}
 
+				@Override
 				public Void construct() {
 					try {
 						updateLogon();
-					} catch (Exception ex) {
+					} catch (IOException | RuntimeException ex) {
 						reportException(ex);
 					}
 					return null;
@@ -4475,42 +4283,41 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 	}
 
-	boolean connectTo(final StationData sd, final boolean connectFrom) {
+	public boolean connectTo(final StationData sd, final boolean connectFrom) {
 		if (ssa.isConnectedTo(sd.getIPAddr())) {
-			log.info("Already connected to " + sd);
+			log.log(Level.INFO, "Already connected to {0}", sd);
 			// new Throwable("Already connected to: "+sd.getIPAddr()
 			// ).printStackTrace();
 			return false;
 		}
 		if (sd.getIPAddr() == null) {
-			log.info("No IP Address supplied for: " + sd);
+			log.log(Level.INFO, "No IP Address supplied for: {0}", sd);
 			return false;
 		}
 		progress((connectFrom ? "Connection From" : "Connecting to: ") + sd.getCall() + " " + sd.getLocation());
 		final Object lock = new Object();
-		final boolean connected[] = new boolean[1];
+		final boolean[] isConnected = new boolean[1];
 		final boolean refused[] = new boolean[1];
-		final LinkEventListener<Object> l = new LinkEventListener<Object>() {
+		final LinkEventListener<Object> l;
+		l = new LinkEventListener<Object>() {
 			@Override
 			public void processEvent(LinkEvent<Object> ev) {
-				log.info("Got event: (" + ev + "), expected addr: " + sd.getIPAddr());
+				log.log(Level.INFO, "Got event: ({0}), expected addr: {1}", new Object[]{ev, sd.getIPAddr()});
 
 				// Is this a connect for the requested station?
 				if (!ev.isSend() && (ev.typ == LinkMode.SDES_EVENT || ev.typ == LinkMode.NETDATA_EVENT
 						|| ev.typ == LinkMode.INFO_EVENT) && sd.getIPAddr().equals((String) ev.getSource())) {
-					connected[0] = true;
+					isConnected[0] = true;
 					synchronized (lock) {
 						lock.notify();
 					}
-					runInSwing(new Runnable() {
-						public void run() {
-							progress((connectFrom ? "Connection From" : "Connecting to: ") + sd.getCall() + " "
-									+ sd.getLocation());
-
-							conn.setText("Connected to: " + sd.getCall() + " " + sd.getLocation());
-							getAction("Trans").setEnabled(true);
-							getAction("Disc").setEnabled(true);
-						}
+					runInSwing(() -> {
+						progress((connectFrom ? "Connection From" : "Connecting to: ") + sd.getCall() + " "
+								+ sd.getLocation());
+						
+						conn.setText("Connected to: " + sd.getCall() + " " + sd.getLocation());
+						getAction("Trans").setEnabled(true);
+						getAction("Disc").setEnabled(true);
 					});
 					if (cons != null)
 						cons.addConnectedStation(sd);
@@ -4518,25 +4325,23 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				} else if (ev.typ == LinkMode.DISC_EVENT) {
 					// Make sure this is the disconnect for this instance.
 					if (sd.getIPAddr().equals((String) ev.getSource())) {
-						connected[0] = false;
+						isConnected[0] = false;
 						removeLinkEventListener(this);
 						refused[0] = true;
 						try {
 							ssa.disconnectFrom(sd.getIPAddr());
-							sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT,
+							sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT,
 									ssa.getConnectCount(), sd));
 						} catch (IOException ex) {
 							log.log(Level.WARNING, ex.toString(), ex);
 						}
-						runInSwing(new Runnable() {
-							public void run() {
-								conn.setText((connectFrom ? "Can't answer Connect From " : "Connection refused to ")
-										+ sd.getCall() + " " + sd.getLocation());
-								conn.repaint();
-								getAction("Conn").setEnabled(true);
-								getAction("Trans").setEnabled(false);
-								getAction("Disc").setEnabled(false);
-							}
+						runInSwing(() -> {
+							conn.setText((connectFrom ? "Can't answer Connect From " : "Connection refused to ")
+									+ sd.getCall() + " " + sd.getLocation());
+							conn.repaint();
+							getAction("Conn").setEnabled(true);
+							getAction("Trans").setEnabled(false);
+							getAction("Disc").setEnabled(false);
 						});
 						// if(cons != null )
 						// cons.removeConnectedStation(sd);
@@ -4568,15 +4373,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				try {
 					// conn.setText( "Connecting to: "+sd.getCall()+
 					// " "+sd.getLocation() );
-					log.info("Connecting to " + sd.getCall() + " at " + sd.getIPAddr() + ", from: " + connectFrom);
+					log.log(Level.INFO, "Connecting to {0} at {1}, from: {2}", new Object[]{sd.getCall(), sd.getIPAddr(), connectFrom});
 					connectTo(sd.getCall(), sd.getIPAddr(), l, sd.getCall().charAt(0) == '*', sd.getDataPort(),
 							sd.getControlPort(), connectFrom);
-					log.info("connected with resolved IP: " + sd.resolvedIPAddress());
+					log.log(Level.INFO, "connected with resolved IP: {0}", sd.resolvedIPAddress());
 					return sd.resolvedIPAddress();
 				} catch (java.net.UnknownHostException ex) {
 					// If we can't resolve, just use the IP address
 					return sd.getIPAddr();
-				} catch (Throwable ex) {
+				} catch (Exception ex) {
 					// If the connect fails, disconnect....
 					return ex;
 				}
@@ -4590,7 +4395,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						reason[0] = (Throwable) val;
 						log.log(Level.WARNING, val.toString(), ((Throwable) val));
 						ssa.disconnectFrom(sd.getIPAddr());
-						sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT,
+						sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT,
 								ssa.getConnectCount(), sd));
 						if (val instanceof ConnectionRefusedException == false) {
 							showMessageDialog((Throwable) val,
@@ -4603,9 +4408,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						}
 						return;
 					}
-					log.info("Connection finished to: " + val);
+					log.log(Level.INFO, "Connection finished to: {0}", val);
 					String str = (String) contacts.get(sd.getCall());
-					log.info("contacts call: " + str);
+					log.log(Level.INFO, "contacts call: {0}", str);
 					if (str != null) {
 						statList.setText(str);
 					} else {
@@ -4619,9 +4424,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 					log.info("Checking connections");
 					checkConnections();
 					log.info("Sending connect event");
-					sendEvent(new LinkEvent<StationData>(this, !connectFrom, LinkMode.STATION_CONN_EVENT,
+					sendEvent(new LinkEvent<>(this, !connectFrom, LinkMode.STATION_CONN_EVENT,
 							ssa.getConnectCount(), sd));
-				} catch (Exception ex) {
+				} catch (IOException ex) {
 					reportException(ex);
 					synchronized (lock) {
 						lock.notify();
@@ -4635,36 +4440,34 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		synchronized (lock) {
 			try {
 				lock.wait(pr.getConnectAttemptTimeout() * 1000);
-			} catch (Exception ex) {
+			} catch (InterruptedException | RuntimeException ex) {
 				reportException(ex);
 			}
 		}
-		if (!connected[0] && !refused[0]) {
+		if (!isConnected[0] && !refused[0]) {
 			// new Throwable( "Connection timeout? ").printStackTrace();
-			runInSwing(new Runnable() {
-				public void run() {
-					if (reason[0] instanceof ConnectionNotPossibleException == false) {
-						conn.setText("Connection Not Allowed");
-					} else if (reason[0] == null || reason[0] instanceof ConnectionNotPossibleException == false) {
-						conn.setText("Connection Timed Out");
-					} else {
-						conn.setText("Connection Failed" + (reason[0] == null ? "" : (": " + reason[0])));
-					}
-
-					// new Throwable( "Connection did timeout?
-					// ").printStackTrace();
+			runInSwing(() -> {
+				if (reason[0] instanceof ConnectionNotPossibleException == false) {
+					conn.setText("Connection Not Allowed");
+				} else if (reason[0] == null || reason[0] instanceof ConnectionNotPossibleException == false) {
+					conn.setText("Connection Timed Out");
+				} else {
+					conn.setText("Connection Failed" + (reason[0] == null ? "" : (": " + reason[0])));
 				}
+				
+				// new Throwable( "Connection did timeout?
+				// ").printStackTrace();
 			});
 			removeLinkEventListener(l);
 		} else {
 			try {
 				audio.connected();
-			} catch (Exception ex) {
+			} catch (IOException | RuntimeException ex) {
 				reportException(ex);
 			}
 		}
-		progress("Returning connected[0]=" + connected[0]);
-		return connected[0];
+		progress("Returning connected[0]=" + isConnected[0]);
+		return isConnected[0];
 	}
 
 	public void disconnectFrom() throws IOException {
@@ -4673,7 +4476,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		List<Connection> v = ssa.getConnectedList();
 		final JDialog d = new JDialog(this, "Select Stations to Disconnect", true);
 		JPanel p = new JPanel();
-		connList = new JList<Connection>(connModel = new ListListModel<Connection>(v));
+		connList = new JList<Connection>(connModel = new ListListModel<>(v));
 		Packer pk = new Packer(p);
 		pk.pack(new JScrollPane(connList)).fillboth();
 		connList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -4683,19 +4486,16 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		pk.pack(new JSeparator()).gridx(0).gridy(1).fillx().gridw(2);
 		final JButton okay = new JButton("Okay"), cancel = new JButton("Cancel");
 		final boolean cancelled[] = new boolean[1];
-		okay.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				cancelled[0] = false;
-				d.setVisible(false);
-			}
+		okay.addActionListener((ActionEvent ev) -> {
+			cancelled[0] = false;
+			d.setVisible(false);
 		});
-		cancel.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent ev) {
-				cancelled[0] = true;
-				d.setVisible(false);
-			}
+		cancel.addActionListener((ActionEvent ev) -> {
+			cancelled[0] = true;
+			d.setVisible(false);
 		});
 		d.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosing(WindowEvent ev) {
 				cancelled[0] = true;
 			}
@@ -4709,8 +4509,12 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return;
 		int[] arr = connList.getSelectedIndices();
 		for (int i = 0; i < arr.length; ++i) {
-			Connection conn = v.get(arr[i]);
-			disconnectFrom(conn.getAddress());
+			Connection tconn = v.get(arr[i]);
+			try {
+				disconnectFrom(tconn.getAddress());
+			} catch( RuntimeException ex ) {
+				reportException(ex);
+			}
 		}
 		checkConnections();
 	}
@@ -4722,7 +4526,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		for (int i = 0; i < staList.size(); ++i) {
 			Entry e = staList.get(i);
 			String ce = CountryAccess.countryFor(e.getStation().getCall());
-			log.finer("Find country(" + ce + ") for call: " + e.getStation().getCall());
+			log.log(Level.FINER, "Find country({0}) for call: {1}", new Object[]{ce, e.getStation().getCall()});
 			if (ce != null && ce.equals(country)) {
 				ne = e;
 				break;
@@ -4760,19 +4564,19 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		// }
 		// }
 		ssa.disconnectFrom(addr);
-		sendEvent(new LinkEvent<StationData>(this, false, LinkMode.STATION_DISC_EVENT, ssa.getConnectCount(), sd));
+		sendEvent(new LinkEvent<>(this, false, LinkMode.STATION_DISC_EVENT, ssa.getConnectCount(), sd));
 		checkConnections();
 		try {
 			audio.disconnect();
-		} catch (Exception ex) {
+		} catch (IOException | RuntimeException ex) {
 			reportException(ex);
 		}
 	}
 
 	public void connectTo(String name, String addr, LinkEventListener<Object> l, boolean isConf, int data, int ctrl,
 			boolean connectFrom) throws Exception {
-		StationData dt = StationData.stationFor(pr.getCallSign());
-		if (dt == null) {
+		StationData sdt = StationData.stationFor(pr.getCallSign());
+		if (sdt == null) {
 			IllegalArgumentException ex = new IllegalArgumentException(
 					"Can't connect from your unconnected station: " + pr.getCallSign());
 			if (connectFrom) {
@@ -4867,6 +4671,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return cnt;
 		}
 
+		@Override
 		public String toString() {
 			return name + " (" + count() + ")";
 		}
@@ -4876,17 +4681,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		List<Entry> data;
 		NodeList root;
 		List nodes = new ArrayList();
-		List<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
+		List<TreeModelListener> listeners = new ArrayList<>();
 		String name;
 		volatile boolean dbg;
 		// ArrayList continents;
 		// Hashtable countries;
 
-		public Entry findStation(String call) {
+		public synchronized Entry findStation(String call) {
 			List<Entry> ls;
-			synchronized (data) {
-				ls = new ArrayList<Entry>(data);
-			}
+			ls = new ArrayList<>(data);
 			for (Entry e : ls) {
 				if (e.getStation().getCall().equals(call))
 					return e;
@@ -4898,30 +4701,34 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			return data;
 		}
 
+		@Override
 		public String toString() {
 			return name;
 		}
 
 		public MyLocModel(List<Entry> v, boolean debug) {
-			root = new NodeList("Stations", new ArrayList<Object>());
+			root = new NodeList("Stations", new ArrayList<>());
 			dbg = debug;
 			setData(v);
 		}
 
-		public synchronized void setData(List<Entry> v) {
-			data = new ArrayList<Entry>();
+		public final synchronized void setData(List<Entry> v) {
+			data = new ArrayList<>();
 			fillData(v);
 			updateAll();
 		}
 
+		@Override
 		public int getChildCount(Object node) {
 			return ((NodeList) node).size();
 		}
 
+		@Override
 		public boolean isLeaf(Object node) {
 			return node instanceof NodeList == false;
 		}
 
+		@Override
 		public int getIndexOfChild(Object parent, Object node) {
 			return ((NodeList) parent).indexOf(node);
 		}
@@ -4938,22 +4745,26 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			});
 		}
 
+		@Override
 		public void removeTreeModelListener(TreeModelListener lis) {
 			if (dbg)
 				progress(this + ": removeTreeModelListener(" + lis + ")");
 			listeners.remove(lis);
 		}
 
+		@Override
 		public void valueForPathChanged(TreePath path, Object value) {
 			if (dbg)
 				progress(this + ": valueForPathChanged(" + path + "," + value + ")");
 
 		}
 
+		@Override
 		public Object getChild(Object parent, int idx) {
 			return ((NodeList) parent).get(idx);
 		}
 
+		@Override
 		public Object getRoot() {
 			return root;
 		}
@@ -4963,7 +4774,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 		}
 
 		void fillData(List<Entry> v) {
-			Map<String, String> cn = new HashMap<String, String>();
+			Map<String, String> cn = new HashMap<>();
 			cn.put("AF", "Africa");
 			cn.put("AN", "Antartica");
 			cn.put("AS", "Asia");
@@ -4975,22 +4786,24 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			cn.put("SA", "South America");
 			ArrayList<String> l = Collections.list(CountryAccess.continents());
 			Collections.sort(l);
-			root.list = new ArrayList<Object>();
+			root.list = new ArrayList<>();
 
-			Map<String, NodeList> cs = new HashMap<String, NodeList>();
-			Map<String, NodeList> ct = new HashMap<String, NodeList>();
-			List<NodeList> rlv = new ArrayList<NodeList>();
+			Map<String, NodeList> cs = new HashMap<>();
+			Map<String, NodeList> ct = new HashMap<>();
+			List<NodeList> rlv = new ArrayList<>();
 
-			for (String n : l) {
+			l.stream().map(n -> {
 				NodeList nl;
-				cs.put(n, nl = new NodeList((String) cn.get(n), new ArrayList<Object>()));
+				cs.put(n, nl = new NodeList((String) cn.get(n), new ArrayList<>()));
 				ct.put(n, nl);
+				return nl;
+			}).forEachOrdered(nl -> {
 				root.list.add(nl);
-			}
+			});
 
 			for (Entry e : v) {
 				StationData sd = e.getStation();
-				String call = sd.getCall();
+				final String call = sd.getCall();
 				if (e.type == Entry.TYPE_CONF || e.type == Entry.TYPE_MSG)
 					continue;
 				boolean add = false;
@@ -5010,9 +4823,9 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				}
 				if (!add)
 					continue;
-				CountryAccess.CountryEntry ce = CountryAccess.entryForCall(sd.getCall());
+				CountryAccess.CountryEntry ce = CountryAccess.entryForCall(call);
 				if (ce == null) {
-					progress("No country for (" + type + "): \"" + sd.getCall() + "\"");
+					progress("No country for (" + type + "): \"" + call + "\"");
 					continue;
 				}
 				if (ce.zone == null) {
@@ -5023,16 +4836,15 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				NodeList al = (NodeList) cs.get(ce.zone.continent);
 				NodeList cl;
 				if ((cl = (NodeList) ct.get(ce.name)) == null) {
-					cl = new NodeList(ce.name, new ArrayList<Object>());
+					cl = new NodeList(ce.name, new ArrayList<>());
 					ct.put(ce.name, cl);
 					al.list.add(cl);
 				}
 				if (ce.name.equals("United States")) {
-					String str = sd.getCall();
 					int r = -1;
-					for (int j = 0; j < str.length(); ++j) {
-						if ("0123456789".indexOf(str.charAt(j)) >= 0) {
-							r = str.charAt(j) - '0';
+					for (int j = 0; j < call.length(); ++j) {
+						if ("0123456789".indexOf(call.charAt(j)) >= 0) {
+							r = call.charAt(j) - '0';
 							break;
 						}
 					}
@@ -5042,7 +4854,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 						rl = rlv.get(r);
 					}
 					if (rl == null) {
-						rl = new NodeList("Region " + r, new ArrayList<Object>());
+						rl = new NodeList("Region " + r, new ArrayList<>());
 						cl.list.add(rl);
 						ct.put("" + r, rl);
 						if (r < rlv.size())
@@ -5059,23 +4871,21 @@ public class Javecho extends JFrame implements ExceptionHandler {
 				cl.list.add(e);
 			}
 			for (NodeList nl : ct.values()) {
-				log.finer("sorting: " + nl.name + "...");
-				Collections.sort(nl.list, new Comparator<Object>() {
-					public int compare(Object o1, Object o2) {
-						if (o1 instanceof Entry) {
-							if (o2 instanceof Entry) {
-								Entry e1 = (Entry) o1;
-								Entry e2 = (Entry) o2;
-								if (e1.type != e2.type)
-									return e2.type - e1.type;
-
-								return e1.getStation().getCall().compareTo(e2.getStation().getCall());
-							} else {
-								return o1.toString().compareTo(o2.toString());
-							}
+				log.log(Level.FINER, "sorting: {0}...", nl.name);
+				Collections.sort(nl.list, (Object o1, Object o2) -> {
+					if (o1 instanceof Entry) {
+						if (o2 instanceof Entry) {
+							Entry e1 = (Entry) o1;
+							Entry e2 = (Entry) o2;
+							if (e1.type != e2.type)
+								return e2.type - e1.type;
+							
+							return e1.getStation().getCall().compareTo(e2.getStation().getCall());
 						} else {
 							return o1.toString().compareTo(o2.toString());
 						}
+					} else {
+						return o1.toString().compareTo(o2.toString());
 					}
 				});
 				log.finer("done");
@@ -5094,12 +4904,6 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			log.finer("Sorting completed....");
 		}
 
-		private void addData(List<Entry> v) {
-			for (int i = 0; i < v.size(); ++i) {
-				Entry e = v.get(i);
-				addData(e, false);
-			}
-		}
 
 		void updateAll() {
 			updatePath(new TreePath(new Object[] { root }));
@@ -5107,6 +4911,7 @@ public class Javecho extends JFrame implements ExceptionHandler {
 
 		void updatePath(final TreePath pth) {
 			runInSwing(new Runnable() {
+				@Override
 				public void run() {
 					TreeModelEvent ev = new TreeModelEvent(this, pth);
 					for (int i = 0; i < listeners.size(); ++i) {
@@ -5126,19 +4931,26 @@ public class Javecho extends JFrame implements ExceptionHandler {
 			}
 		}
 
-		public void addData(Entry e) {
-			addData(e, true);
-		}
-
-		private void addData(Entry e, boolean update) {
-		}
-
-		public void removeData(Entry e) {
-			removeData(e, true);
-		}
-
-		private void removeData(Entry e, boolean update) {
-		}
+//		private void addData(List<Entry> v) {
+//			for (int i = 0; i < v.size(); ++i) {
+//				Entry e = v.get(i);
+//				addData(e, false);
+//			}
+//		}
+//		public void addData(Entry e) {
+//			addData(e, true);
+//		}
+//
+//		private void addData(Entry e, boolean update) {
+//
+//		}
+//
+//		public void removeData(Entry e) {
+//			removeData(e, true);
+//		}
+//
+//		private void removeData(Entry e, boolean update) {
+//		}
 	}
 
 	private class MyCellRenderer implements TreeCellRenderer {

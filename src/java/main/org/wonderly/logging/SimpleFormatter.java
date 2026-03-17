@@ -15,6 +15,19 @@ public class SimpleFormatter extends java.util.logging.Formatter {
 			c.setTimeInMillis(record.getMillis());
 			dt = fmt.format(c.getTime());
 		}
-		return dt +" ["+record.getLoggerName()+"] # "+record.getLevel()+" # "+formatMessage(record)+System.lineSeparator();
+		String res = dt +" ["+record.getLoggerName()+"] # "+record.getLevel()+" # "+formatMessage(record);
+		if( record.getThrown() != null ) {
+			Throwable t = record.getThrown();
+			while( t != null ) {
+				res += "Exception "+t.getClass().getName()+": "+t.getMessage()+ System.lineSeparator();
+				StackTraceElement[]stk = t.getStackTrace();
+				for( int i = 0; i < stk.length; ++i ) {
+					res += "\tat "+stk[i].toString() + System.lineSeparator();
+				}
+				t = t.getCause();
+			}
+		}
+				
+		return res+System.lineSeparator();
 	}
 }

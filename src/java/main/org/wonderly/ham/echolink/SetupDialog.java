@@ -14,11 +14,11 @@ import org.wonderly.swing.*;
 /**
  *  This class provides the setup dialog for the echolink client.
  */
-public class SetupDialog extends JDialog {
+public class SetupDialog extends CancellableDialog {
 	private Javecho je;
 	private Parameters prm;
 	private boolean first;
-
+	private volatile boolean cancelled;
 	public SetupDialog( Javecho je, Parameters params, boolean first ) {
 		super( je, "Setup", true );
 		this.first = first;
@@ -45,18 +45,17 @@ public class SetupDialog extends JDialog {
 		bpk.pack( cancel ).gridx(1).gridy(0).inset(0,0,0,40);
 		bpk.pack( help ).gridx(2).gridy(0);
 		pk.pack( bt ).gridx(0).gridy(++y).fillx();
-		final boolean cancelled[] = new boolean[1];
 
 		okay.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = false;
+				cancelled = false;
 				setVisible(false);
 			}
 		});
 
 		cancel.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent ev ) {
-				cancelled[0] = true;
+				cancelled = true;
 				setVisible(false);
 			}
 		});
@@ -74,56 +73,56 @@ public class SetupDialog extends JDialog {
 
 		addWindowListener( new WindowAdapter() {
 			public void windowClosing( WindowEvent ev ) {
-				cancelled[0] = true;
+				cancelled = true;
 			}
 		});
 		setLocationRelativeTo( je );
-		setVisible(true);
-		if( cancelled[0] == false ) {
-			java.util.List<String> v = prm.getServerList();
-			prm.getServers().clear();
-			for( int i = 0; i < srvbx.length; ++i ) {
-				int idx = srvbx[i].getSelectedIndex();
-				if( idx >= v.size() ) {
-					prm.setServerN( i, null );
-				} else {
-					prm.setServerN( i, 
-						(String)srvbx[i].getSelectedItem() );
-				}
+	}
+	public void onClose() {
+		java.util.List<String> v = prm.getServerList();
+		prm.getServers().clear();
+		for( int i = 0; i < srvbx.length; ++i ) {
+			int idx = srvbx[i].getSelectedIndex();
+			if( idx >= v.size() ) {
+				prm.setServerN( i, null );
+			} else {
+				prm.setServerN( i, 
+					(String)srvbx[i].getSelectedItem() );
 			}
-			prm.setRetryTimeout( numberFrom(
-				retryTimeout, prm.getRetryTimeout() ) );
-			prm.setCallSign( call.getText().toUpperCase() );
-			prm.setPassword( pass.getText().toUpperCase() );
-			prm.setUserName( name.getText() );
-			prm.setQTH( loc.getText() );
-			prm.setEmail( email.getText() );
-			prm.setUserMode( isUser.isSelected() );
-			prm.setConnectAttemptTimeout( numberFrom(
-				connAtt, prm.getConnectAttemptTimeout() ) );
-			prm.setPTTTimeout( numberFrom( 
-				transTime, prm.getPTTTimeout() ) );
-			prm.setInactiveTimeout( numberFrom(
-				inactTime, prm.getInactiveTimeout() ) );
-			prm.setReceiveTimeLimit( numberFrom( 
-				rcvTimeLimit, prm.getReceiveTimeLimit() ) );
-			prm.setReceiveHangTimeout( numberFrom( 
-				rcvHang, prm.getReceiveHangTimeout() ) );
-			prm.setAudioTrace( trcAud.isSelected() );
-//			prm.setHoldAudioResources( hldAud.isSelected() );
-			prm.setAudioAmplification(
-				((Number)audAmp.getValue()).doubleValue() );
-			prm.setRaiseOnMutedContact( raiseMuted.isSelected() );
-			prm.setBeeping( bellOnError.isSelected() );
-			prm.setDataPort( Integer.parseInt( dataPort.getText() ) );
-			prm.setControlPort( Integer.parseInt( controlPort.getText() ) );
-			prm.setLatLon( latLon.getText() );
-			prm.setAudioDevice( aubx.getSelectedIndex() );
-			prm.setUseSelectedAudio( useSelAudio.isSelected() );
-			prm.setKMLPort( Integer.parseInt( kmlport.getText() ) );
-			prm.setKMLBindAddress( kmlsrvr.getText() );
-			prm.saveData();
 		}
+		prm.setRetryTimeout( numberFrom(
+			retryTimeout, prm.getRetryTimeout() ) );
+		prm.setCallSign( call.getText().toUpperCase() );
+		prm.setPassword( pass.getText().toUpperCase() );
+		prm.setUserName( name.getText() );
+		prm.setQTH( loc.getText() );
+		prm.setEmail( email.getText() );
+		prm.setUserMode( isUser.isSelected() );
+		prm.setConnectAttemptTimeout( numberFrom(
+			connAtt, prm.getConnectAttemptTimeout() ) );
+		prm.setPTTTimeout( numberFrom( 
+			transTime, prm.getPTTTimeout() ) );
+		prm.setInactiveTimeout( numberFrom(
+			inactTime, prm.getInactiveTimeout() ) );
+		prm.setReceiveTimeLimit( numberFrom( 
+			rcvTimeLimit, prm.getReceiveTimeLimit() ) );
+		prm.setReceiveHangTimeout( numberFrom( 
+			rcvHang, prm.getReceiveHangTimeout() ) );
+		prm.setAudioTrace( trcAud.isSelected() );
+//			prm.setHoldAudioResources( hldAud.isSelected() );
+		prm.setAudioAmplification(
+			((Number)audAmp.getValue()).doubleValue() );
+		prm.setRaiseOnMutedContact( raiseMuted.isSelected() );
+		prm.setBeeping( bellOnError.isSelected() );
+		prm.setDataPort( Integer.parseInt( dataPort.getText() ) );
+		prm.setControlPort( Integer.parseInt( controlPort.getText() ) );
+		prm.setLatLon( latLon.getText() );
+		prm.setAudioDevice( aubx.getSelectedIndex() );
+		prm.setUseSelectedAudio( useSelAudio.isSelected() );
+		prm.setKMLPort( Integer.parseInt( kmlport.getText() ) );
+		prm.setKMLBindAddress( kmlsrvr.getText() );
+		prm.saveData();
+
 	}
 	
 	int numberFrom( JTextField fld, int old ) {
